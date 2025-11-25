@@ -2,9 +2,14 @@
 // painho
 // ============================================
 
-const painho_version = "0.0.2"
+const painho_version = "0.0.3"
 const MAX_ITERATIONS = 512;
 let globalClearFlag = false;
+
+function stripDoubleHashWS(s) {
+    // remove whitespace adjacente à esquerda e direita de cada ##
+    return s.replace(/(\s*)##(\s*)/g, "");
+}
 
 
 // === EXTRAÇÃO DE BLOCO BALANCEADO ===
@@ -377,9 +382,8 @@ function collectPatterns(src) {
         if (k < src.length && src[k] === '{') {
             const [replacePattern, posAfterReplace] = extractBlock(src, k, '{', '}');
             patterns.push({
-                match: matchPattern.trim(),
-                // Processa contadores no padrão de replacement
-                replace: processCounterOperators(replacePattern.trim())
+                match: stripDoubleHashWS(matchPattern.trim()),
+                replace: processCounterOperators(stripDoubleHashWS(replacePattern.trim()))
             });
             let left = src.substring(0, m.matchStart);
             let right = src.substring(posAfterReplace);
@@ -389,7 +393,6 @@ function collectPatterns(src) {
     
     return [patterns, src];
 }
-
 function applyPatterns(src, patterns) {
     let globalClearFlag = false;
     let lastResult = "";
@@ -413,29 +416,29 @@ function applyPatterns(src, patterns) {
                 const matchStart = args[args.length - 2];
                 const matchEnd = matchStart + fullMatch.length;
 
+                // monta varMap
                 const varMap = {};
                 for (let i = 0; i < varNames.length; i++) {
                     varMap[varNames[i]] = captures[i] || '';
                 }
 
-                const _pre = src.slice(0, matchStart);
+                const _pre   = src.slice(0, matchStart);
                 const _post  = src.slice(matchEnd);
 
                 let result = pattern.replace;
 
-                // vars
+                // --------------------------
+                // substitui variáveis normais
+                // --------------------------
                 for (const [varName, value] of Object.entries(varMap)) {
                     const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     result = result.replace(new RegExp(escaped + '(?![A-Za-z0-9_])', 'g'), value);
                 }
 
-                // pre/post/match
-                result = result.replace(/\$pre\b/g, _pre);
-                result = result.replace(/\$post\b/g,  _post);
-                result = result.replace(/\$match\b/g,  fullMatch);
-
                 // unique
-                result = result.replace(/\$unique\b/g, () => counterState.genUnique());
+                result = result.replace(/\$unique\b/g, () =>
+                    counterState.genUnique()
+                );
 
                 // eval
                 result = result.replace(/\$eval\{([^}]*)\}/g, (_, code) => {
@@ -451,34 +454,41 @@ function applyPatterns(src, patterns) {
                 // counters
                 result = processCounterOperators(result);
 
-                // concat
+                // concat ($$ → nada)
                 result = result.replace(/\$\$/g, '');
 
-                // ---------------------------------------
-                // $clear → dropa o documento inteiro
-                // ---------------------------------------
+                // ======================================================
+                // PATCH ESSENCIAL:
+                // detectar $clear ANTES de expandir $pre/$post/$match
+                // evita que "$clear##$pre" vire "$clearasddasda",
+                // o que impediria a regex de detectar.
+                // ======================================================
                 if (/\$clear\b/.test(result)) {
                     result = result.replace(/\$clear\b/g, '');
                     globalClearFlag = true;
                 }
 
+                // agora expande $pre/$post/$match
+                result = result.replace(/\$pre\b/g, _pre);
+                result = result.replace(/\$post\b/g, _post);
+                result = result.replace(/\$match\b/g, fullMatch);
+
                 lastResult = result;
                 return result;
             });
 
-            // ---------------------------------------
-            // aplica clear após rodada
-            // ---------------------------------------
+            // aplica clear no final da rodada
             if (globalClearFlag) {
-                src = lastResult;    // documento vira o rebuild
+                src = lastResult;
                 globalClearFlag = false;
-                changed = true;      // força reprocessar com src zerado
+                changed = true; // força nova rodada com src limpo
             }
         }
     }
 
     return src;
 }
+
 
 
 // === EXPANSÃO DE MACROS (MODIFICADA) ===
