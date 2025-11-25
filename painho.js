@@ -2,7 +2,10 @@
 // painho
 // ============================================
 
-const painho_version = "0.0.1"
+const painho_version = "0.0.2"
+const MAX_ITERATIONS = 512;
+let globalClearFlag = false;
+
 
 // === EXTRAÇÃO DE BLOCO BALANCEADO ===
 function extractBlock(src, openpos, open, close) {
@@ -56,14 +59,20 @@ function extractBlock(src, openpos, open, close) {
 }
 
 // ============================================
-// SISTEMA GLOBAL DE CONTADOR
+// SISTEMA GLOBAL DE CONTADOR + UNIQUE
 // ============================================
 const counterState = {
     value: 0,
-    reset: function() {
+    unique: 0,
+    reset() {
         this.value = 0;
+        this.unique = 0;
+    },
+    genUnique() {
+        return "u" + (this.unique++).toString(36);
     }
 };
+
 
 
 function patternToRegex(pattern) {
@@ -382,11 +391,14 @@ function collectPatterns(src) {
 }
 
 function applyPatterns(src, patterns) {
+    let globalClearFlag = false;
+    let lastResult = "";
+
     for (const pattern of patterns) {
         let changed = true;
         let iterations = 0;
 
-        while (changed && iterations < 512) {
+        while (changed && iterations < MAX_ITERATIONS) {
             changed = false;
             iterations++;
 
@@ -395,38 +407,79 @@ function applyPatterns(src, patterns) {
 
             src = src.replace(regex, (...args) => {
                 changed = true;
-                const match = args[0];
+
+                const fullMatch = args[0];
                 const captures = args.slice(1, -2);
+                const matchStart = args[args.length - 2];
+                const matchEnd = matchStart + fullMatch.length;
 
                 const varMap = {};
                 for (let i = 0; i < varNames.length; i++) {
                     varMap[varNames[i]] = captures[i] || '';
                 }
 
+                const _pre = src.slice(0, matchStart);
+                const _post  = src.slice(matchEnd);
+
                 let result = pattern.replace;
 
-                // Substitui as variáveis capturadas, **antes** de processar $$
+                // vars
                 for (const [varName, value] of Object.entries(varMap)) {
-                    // Escapa o nome da variável para evitar conflitos com regex
-                    const escapedVarName = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    // Substitui $varname, garantindo que não seja seguido por um caractere alfanumérico ou _
-                    result = result.replace(new RegExp(escapedVarName + '(?![A-Za-z0-9_])', 'g'), value);
+                    const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    result = result.replace(new RegExp(escaped + '(?![A-Za-z0-9_])', 'g'), value);
                 }
 
-                // Processa contadores no resultado da substituição
+                // pre/post/match
+                result = result.replace(/\$pre\b/g, _pre);
+                result = result.replace(/\$post\b/g,  _post);
+                result = result.replace(/\$match\b/g,  fullMatch);
+
+                // unique
+                result = result.replace(/\$unique\b/g, () => counterState.genUnique());
+
+                // eval
+                result = result.replace(/\$eval\{([^}]*)\}/g, (_, code) => {
+                    try {
+                        return String(Function("ctx", `"use strict"; return (${code})`)({
+                            _pre, _post, match: fullMatch, vars: varMap
+                        }));
+                    } catch {
+                        return "";
+                    }
+                });
+
+                // counters
                 result = processCounterOperators(result);
 
-                // Agora sim, remove os $$ para permitir concatenação
+                // concat
                 result = result.replace(/\$\$/g, '');
-                result = result.replace(/\$match/g, match);
 
+                // ---------------------------------------
+                // $clear → dropa o documento inteiro
+                // ---------------------------------------
+                if (/\$clear\b/.test(result)) {
+                    result = result.replace(/\$clear\b/g, '');
+                    globalClearFlag = true;
+                }
+
+                lastResult = result;
                 return result;
             });
+
+            // ---------------------------------------
+            // aplica clear após rodada
+            // ---------------------------------------
+            if (globalClearFlag) {
+                src = lastResult;    // documento vira o rebuild
+                globalClearFlag = false;
+                changed = true;      // força reprocessar com src zerado
+            }
         }
     }
 
     return src;
 }
+
 
 // === EXPANSÃO DE MACROS (MODIFICADA) ===
 function expandMacros(src, macros) {
@@ -435,7 +488,7 @@ function expandMacros(src, macros) {
         let changed = true;
         let iterations = 0;
         
-        while (changed && iterations < 512) {
+        while (changed && iterations < MAX_ITERATIONS) {
             changed = false;
             iterations++;
             const originalSrc = src;
