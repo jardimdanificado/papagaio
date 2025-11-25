@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>painho</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .file-input {
+            display: none;
+        }
+        .content {
+            display: flex;
+            flex: 1;
+            gap: 15px;
+            padding: 15px;
+            overflow: hidden;
+        }
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+        .panel h2 {
+            padding: 12px 15px;
+            background: #e9ecef;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+        textarea {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: none;
+            background: white;
+            color: #333;
+            line-height: 1.5;
+        }
+        textarea:focus {
+            outline: none;
+            background: #fffbf0;
+        }
+        .footer {
+            padding: 12px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666;
+            text-align: right;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👨‍🍼 painho</h1>
+            <p>a minimalist text preprocessor</p>
+        </div>
+        <div class="controls">
+            <button onclick="loadFile()">📁 load file</button>
+            <button onclick="processCode()">▶ process</button>
+            <button onclick="downloadResult()" class="secondary">⬇ download</button>
+            <button onclick="clearAll()" class="secondary">🗑 clean all</button>
+            <input type="file" id="fileInput" class="file-input" onchange="handleFileSelect()">
+        </div>
+        <div class="content">
+            <div class="panel">
+                <h2>input...</h2>
+                <textarea id="input" placeholder="input..."></textarea>
+            </div>
+            <div class="panel">
+                <h2>output...</h2>
+                <textarea id="output" placeholder="output..." readonly></textarea>
+            </div>
+        </div>
+        <div class="footer">
+            <span id="status" class="status">Pronto</span>
+        </div>
+    </div>
+
+    <script>
+        // Variável para armazenar o conteúdo do header
+        let headerContent = '';
+
+        // Carregar core.js
+        const coreScript = document.createElement('script');
+        coreScript.src = 'painho.js';
+        document.head.appendChild(coreScript);
+
+        coreScript.onload = () => {
+            console.log('core loaded!');
+        };
+
+        function processCode() {
+            try {
+                const input = document.getElementById('input').value;
+                const status = document.getElementById('status');
+                
+                if (!window.painho) {
+                    status.textContent = 'core not loaded...';
+                    status.classList.add('error');
+                    return;
+                }
+                
+                status.textContent = 'processing...';
+                status.classList.remove('error');
+                
+                // Concatenar header com o conteúdo do input (implicitamente)
+                const fullInput = headerContent + input;
+                const output = window.painho(fullInput);
+                document.getElementById('output').value = output;
+                status.textContent = 'deu bom papai!';
+            } catch (err) {
+                document.getElementById('output').value = `Erro: ${err.message}`;
+                status.textContent = 'deu ruim papai!';
+                status.classList.add('error');
+            }
+        }
+
+        function loadFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        function handleFileSelect() {
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('input').value = e.target.result;
+                    document.getElementById('fileInput').value = '';
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function downloadResult() {
+            const output = document.getElementById('output').value;
+            if (!output) {
+                alert('nothing to download!');
+                return;
+            }
+            const blob = new Blob([output], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'output.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+            document.getElementById('status').textContent = 'done';
+            document.getElementById('status').classList.remove('error');
+        }
+
+        // Permite processar com Ctrl+Enter
+        document.getElementById('input').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                processCode();
+            }
+        });
+    </script>
+</body>
+</html>

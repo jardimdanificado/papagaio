@@ -1,0 +1,59 @@
+#!/usr/bin/env qjs
+
+import * as std from 'std';
+
+// Carregar o core
+std.loadScript('./src/painho.js');
+
+// Função para ler arquivo
+function readFileSync(filename) {
+    try {
+        const file = std.open(filename, 'r');
+        if (!file) return '';
+        const content = file.readAsString();
+        file.close();
+        return content || '';
+    } catch (e) {
+        return '';
+    }
+}
+
+// === LEITURA DE STDIN (QuickJS) ===
+function readStdin() {
+    let input = '';
+    try {
+        while (true) {
+            const chunk = std.in.readAsString(4096);
+            if (!chunk || chunk.length === 0) break;
+            input += chunk;
+        }
+    } catch (e) {
+        // EOF ou erro, tudo bem
+    }
+    return input;
+}
+
+// === MAIN ===
+function main() {
+    try {
+        // Ler o conteúdo de build/urb.rap e adicionar ao início da entrada
+        const headerContent = readFileSync('./build/urb.rap');
+        const stdinContent = readStdin();
+        
+        // Concatenar conteúdo do header com a entrada stdin
+        const fullInput = headerContent + stdinContent;
+        
+        if (!fullInput.trim()) {
+            std.err.printf('Erro: entrada vazia (nem o header nem stdin)\n');
+            std.exit(1);
+        }
+        
+        const output = painho(fullInput);
+        std.out.printf('%s', output);
+    } catch (err) {
+        std.err.printf('Erro: %s\n', err.message);
+        std.exit(1);
+    }
+}
+
+main();
