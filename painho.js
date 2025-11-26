@@ -2,7 +2,7 @@
 // painho
 // ============================================
 
-const painho_version = "0.0.5"
+const painho_version = "0.0.6"
 const MAX_ITERATIONS = 512;
 let globalClearFlag = false;
 
@@ -131,8 +131,8 @@ function patternToRegex(pattern) {
             continue;
         }
 
-        // Verifica por delimitadores com variáveis: {$var}, ($var), [$var], "$var", '$var', `$var`
-        if ((pattern[i] === '{' || pattern[i] === '(' || pattern[i] === '[' || 
+        // Verifica por delimitadores com variáveis: {$var}, ($var), [$var], <$var>, "$var", '$var', `$var`
+        if ((pattern[i] === '{' || pattern[i] === '(' || pattern[i] === '[' || pattern[i] === '<' ||
              pattern[i] === '"' || pattern[i] === "'" || pattern[i] === '`') &&
             i + 1 < pattern.length && pattern[i + 1] === '$') {
 
@@ -140,6 +140,7 @@ function patternToRegex(pattern) {
             const closeDelim = openDelim === '{' ? '}' : 
                                openDelim === '(' ? ')' : 
                                openDelim === '[' ? ']' :
+                               openDelim === '<' ? '>' :
                                openDelim === '"' ? '"' :
                                openDelim === "'" ? "'" :
                                openDelim === '`' ? '`' :
@@ -155,7 +156,8 @@ function patternToRegex(pattern) {
             if (j < pattern.length && pattern[j] === closeDelim) {
                 const escapedOpen = openDelim === '(' ? '\\(' : 
                                    openDelim === '[' ? '\\[' : 
-                                   openDelim === '{' ? '\\{' : 
+                                   openDelim === '{' ? '\\{' :
+                                   openDelim === '<' ? '\\<' :
                                    openDelim === '"' ? '"' :
                                    openDelim === "'" ? "'" :
                                    openDelim === '`' ? '`' :
@@ -163,6 +165,7 @@ function patternToRegex(pattern) {
                 const escapedClose = closeDelim === ')' ? '\\)' : 
                                     closeDelim === ']' ? '\\]' : 
                                     closeDelim === '}' ? '\\}' :
+                                    closeDelim === '>' ? '\\>' :
                                     closeDelim === '"' ? '"' :
                                     closeDelim === "'" ? "'" :
                                     closeDelim === '`' ? '`' :
@@ -248,8 +251,8 @@ function patternToRegex(pattern) {
 
 // Função auxiliar para gerar regex que captura blocos balanceados
 function buildBalancedBlockRegex(open, close) {
-    const escapedOpen = open === '(' ? '\\(' : (open === '[' ? '\\[' : open === '{' ? '\\{' : open);
-    const escapedClose = close === ')' ? '\\)' : (close === ']' ? '\\]' : close === '}' ? '\\}' : close);
+    const escapedOpen = open === '(' ? '\\(' : (open === '[' ? '\\[' : open === '{' ? '\\{' : open === '<' ? '\\<' : open);
+    const escapedClose = close === ')' ? '\\)' : (close === ']' ? '\\]' : close === '}' ? '\\}' : close === '>' ? '\\>' : close);
 
     // Regex para capturar blocos balanceados
     // Ex: {a{b}c} -> captura a{b}c
@@ -269,14 +272,15 @@ function extractVarNames(pattern) {
             continue;
         }
 
-        // Verifica por delimitadores com variáveis (incluindo aspas)
-        if ((pattern[i] === '{' || pattern[i] === '(' || pattern[i] === '[' ||
+        // Verifica por delimitadores com variáveis (incluindo aspas e angle brackets)
+        if ((pattern[i] === '{' || pattern[i] === '(' || pattern[i] === '[' || pattern[i] === '<' ||
              pattern[i] === '"' || pattern[i] === "'" || pattern[i] === '`') &&
             i + 1 < pattern.length && pattern[i + 1] === '$') {
 
             const closeDelim = pattern[i] === '{' ? '}' : 
                                pattern[i] === '(' ? ')' : 
                                pattern[i] === '[' ? ']' :
+                               pattern[i] === '<' ? '>' :
                                pattern[i] === '"' ? '"' :
                                pattern[i] === "'" ? "'" :
                                pattern[i] === '`' ? '`' :
@@ -643,10 +647,15 @@ function processNamespaceBlocks(src) {
         // Remove a declaração 'namespace {}' e substitui pelo conteúdo processado
         let left = src.substring(0, m.matchStart);
         let right = src.substring(posAfter);
-        src = collapseLocalNewlines(left, right);
         
-        // Insere o conteúdo processado no lugar
-        src = src.substring(0, m.matchStart) + processedContent + src.substring(m.matchStart);
+        // Preserva newline antes de namespace se existir
+        let prefix = '';
+        if (left.endsWith('\n')) {
+            prefix = '\n';
+            left = left.slice(0, -1);
+        }
+        
+        src = left + prefix + processedContent + right;
     }
     
     return src;
