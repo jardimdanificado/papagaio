@@ -1,8 +1,8 @@
 // ============================================
-// painho
+// papagaio
 // ============================================
 
-const painho_version = "0.0.8"
+const papagaio_version = "0.0.8"
 const MAX_ITERATIONS = 512;
 let globalClearFlag = false;
 
@@ -541,8 +541,8 @@ function processEvalBlocks(src) {
         let out = "";
         try {
             out = String(
-                Function("painho", "ctx", `"use strict"; return (${content});`)
-                (painho, { })
+                Function("papagaio", "ctx", `"use strict"; return (${content});`)
+                (papagaio, { })
             );
         } catch (e) {
             out = "";
@@ -574,7 +574,7 @@ function processLocalBlocks(src) {
         const m = matches[j];
         const [content, posAfter] = extractBlock(src, m.openPos, OPEN, CLOSE);
 
-        const processedContent = painho(content);
+        const processedContent = papagaio(content);
 
         let left = src.substring(0, m.matchStart);
         let right = src.substring(posAfter);
@@ -641,7 +641,7 @@ function processLateBlocks(src) {
     return src;
 }
 
-function painho(input) {
+function papagaio(input) {
     let src = input;
 
     // pré-passagem
@@ -670,8 +670,8 @@ function painho(input) {
 // Export para diferentes ambientes
 if (typeof module !== 'undefined' && module.exports) {
     // Node.js / CommonJS
-    module.exports = { painho };
+    module.exports = { papagaio };
 } else if (typeof exports !== 'undefined') {
     // Browser / QuickJS
-    exports.painho = painho;
+    exports.papagaio = papagaio;
 }

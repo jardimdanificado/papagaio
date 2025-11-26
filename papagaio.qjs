@@ -3,7 +3,7 @@
 import * as std from 'std';
 
 // Carregar o core
-std.loadScript('./src/painho.js');
+std.loadScript('./src/papagaio.js');
 
 // -----------------------------
 // Helpers
@@ -116,7 +116,7 @@ function main() {
             std.exit(1);
         }
 
-        const out = painho(fullInput);
+        const out = papagaio(fullInput);
         std.out.printf("%s", out);
 
     } catch (err) {

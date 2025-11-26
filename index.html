@@ -1,222 +1,342 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>👨‍🍼 painho</title>
+    <title>🦜 papagaio</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg-dark: #282828;
+            --bg: #3c3836;
+            --bg-light: #504945;
+            --fg: #ebdbb2;
+            --fg-dark: #a89984;
+            --green: #b8bb26;
+            --yellow: #fabd2f;
+            --blue: #83a598;
+            --red: #fb4934;
+            --orange: #fe8019;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            color: var(--fg); 
+            padding: 15px; 
             min-height: 100vh;
-            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
         }
+        
+        /* Animated Reggae Background Stripes */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(45deg, 
+                    #C03F31 0%, #C03F31 25%, 
+                    #F9DC5C 25%, #F9DC5C 50%, 
+                    #2D936C 50%, #2D936C 75%, 
+                    #0A100D 75%, #0A100D 100%);
+            background-size: 400% 400%;
+            animation: reggaeBackground 20s ease infinite;
+            z-index: -1;
+        }
+        
+        @keyframes reggaeBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
         .container {
-            max-width: 1400px;
+            max-width: 1100px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: var(--bg);
+            border-radius: 8px;
             overflow: hidden;
+            height: 95vh;
             display: flex;
             flex-direction: column;
-            height: 90vh;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            opacity: 1;
         }
+        
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+            background: var(--bg-light);
+            padding: 12px 20px;
+            text-align: center;
+            position: relative;
+            border-bottom: 2px solid var(--yellow);
+            opacity: 1;
         }
+        
         .header h1 {
-            font-size: 28px;
-            margin-bottom: 5px;
+            font-size: 22px;
+            font-weight: bold;
         }
-        .header p {
-            opacity: 0.9;
-            font-size: 14px;
+        
+        .header::before, .header::after {
+            content: "🦜";
+            position: absolute;
+            top: 75%;
+            transform: translateY(-75%);
+            transition: all 0.5s ease;
+            scale: 2;
         }
-        .controls {
+        .header::before { left: 20px; }
+        .header::after { right: 20px; }
+        
+        .animate-parrot::before,
+        .animate-parrot::after {
+            animation: parrotSpin 0.25s ease-in-out;
+        }
+
+        @keyframes parrotSpin {
+            0% { transform: translateY(-75%) scale(1) rotate(0deg); }
+            10% { transform: translateY(-75%) scale(1.5) rotate(0deg); }
+            100% { transform: translateY(-75%) scale(1) rotate(360deg); }
+        }
+        
+        .main-controls {
             display: flex;
             gap: 10px;
-            padding: 15px 30px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
+            padding: 12px 20px;
+            background: var(--bg-light);
+            border-bottom: 1px solid var(--bg);
+            justify-content: center;
             flex-wrap: wrap;
-            align-items: center;
+            opacity: 1;
         }
+        
         button {
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 6px;
+            padding: 8px 15px;
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--bg-light);
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
             font-weight: 600;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
         }
+        
         button:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            background: var(--yellow);
+            color: var(--bg-dark);
         }
-        button:active {
-            transform: translateY(0);
-        }
-        button.secondary {
-            background: #6c757d;
-        }
-        button.secondary:hover {
-            background: #5a6268;
-        }
-        .file-input {
-            display: none;
-        }
+        
         .content {
             display: flex;
             flex: 1;
             gap: 15px;
             padding: 15px;
             overflow: hidden;
+            opacity: 1;
         }
+        
         .panel {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e0e0e0;
+            background: var(--bg-dark);
+            border-radius: 5px;
             overflow: hidden;
+            border: 1px solid var(--bg-light);
+            opacity: 1;
         }
+        
         .panel h2 {
-            padding: 12px 15px;
-            background: #e9ecef;
-            border-bottom: 1px solid #dee2e6;
+            padding: 10px 15px;
+            background: var(--bg-light);
             font-size: 14px;
+            text-align: center;
             font-weight: 600;
-            color: #333;
         }
+        
         textarea {
             flex: 1;
             padding: 15px;
             border: none;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
+            background: var(--bg-dark);
+            color: var(--fg);
             resize: none;
-            background: white;
-            color: #333;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
             line-height: 1.5;
+            opacity: 1;
         }
+        
         textarea:focus {
-            outline: none;
-            background: #fffbf0;
+            outline: 2px solid var(--blue);
         }
+        
         .footer {
-            padding: 12px 30px;
-            background: #f8f9fa;
-            border-top: 1px solid #e0e0e0;
-            font-size: 12px;
-            color: #666;
-            text-align: right;
+            padding: 12px 20px;
+            background: var(--bg-light);
+            border-top: 1px solid var(--bg);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative;
+            opacity: 1;
         }
-        .status {
-            display: inline-block;
-            padding: 4px 12px;
-            background: #d4edda;
-            color: #155724;
-            border-radius: 4px;
+        
+        .footer::before {
+            content: "🌴🌿";
+            position: absolute;
+            bottom: 15%;
+            right: 2%;
+            opacity: 0.7;
+        }
+        
+        .footer-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            color: var(--fg);
+            font-size: 14px;
+            white-space: nowrap;
             font-weight: 600;
         }
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
+        
+        input[type="text"] {
+            background: var(--bg-dark);
+            border: 1px solid var(--bg-light);
+            color: var(--fg);
+            padding: 6px;
+            width: 40px;
+            text-align: center;
+            border-radius: 3px;
+        }
+        
+        .status {
+            background: var(--green);
+            color: var(--bg-dark);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .file-input { display: none; }
+        
+        @media (max-width: 768px) {
+            .content { flex-direction: column; }
+            .panel { min-height: 250px; }
+            .footer-controls, .footer-bottom { flex-direction: column; align-items: stretch; gap: 10px; }
+            .control-group { justify-content: center; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>👨‍🍼 painho</h1>
-            <p>easy yet powerful text preprocessor</p>
+        <div class="header" id="header">
+            <h1>papagaio</h1>
+            easy generic text preprocessor
         </div>
-        <div class="controls">
-            <button onclick="loadFile()">📁 load file</button>
-            <button onclick="processCode()">▶ process</button>
-            <button onclick="downloadResult()" class="secondary">⬇ download</button>
-            <button onclick="clearAll()" class="secondary">🗑 clean all</button>
-
-            <label style="margin-left:20px; font-size:14px; font-weight:600;">quotes:</label>
-            <input id="openQuote" type="text" placeholder="{" style="width:45px; padding:5px;">
-            <input id="closeQuote" type="text" placeholder="}" style="width:45px; padding:5px;">
-            <button onclick="applyQuotes()" style="background:#28a745;">apply</button>
-            <button onclick="resetQuotes()" style="background:#dc3545;">reset</button>
-
-            <label style="margin-left:20px; font-size:14px; font-weight:600;">sigil:</label>
-            <input id="sigilInput" type="text" placeholder="$" style="width:45px; padding:5px;">
-            <button onclick="applySigil()" style="background:#17a2b8;">apply</button>
-            <button onclick="resetSigil()" style="background:#dc3545;">reset</button>
-
-
+        
+        <div class="main-controls">
+            <button onclick="animateParrot(); loadFile()">📂 Load</button>
+            <button onclick="animateParrot(); processCode()">▶️ Process</button>
+            <button onclick="animateParrot(); downloadResult()">💾 Download</button>
+            <button onclick="animateParrot(); clearAll()">🗑️ Clear</button>
             <input type="file" id="fileInput" class="file-input" onchange="handleFileSelect()">
         </div>
 
         <div class="content">
             <div class="panel">
-                <h2>input...</h2>
-                <textarea id="input" placeholder="input..."></textarea>
+                <h2>INPUT</h2>
+                <textarea id="input" placeholder="Enter your text here..."></textarea>
             </div>
             <div class="panel">
-                <h2>output...</h2>
-                <textarea id="output" placeholder="output..." readonly></textarea>
+                <h2>OUTPUT</h2>
+                <textarea id="output" placeholder="Output will appear here..." readonly></textarea>
             </div>
         </div>
+        
         <div class="footer">
-            <span id="status" class="status">Pronto</span>
+            <div class="footer-controls">
+                <div class="control-group">
+                    <label>Delimiter:</label>
+                    <input id="openQuote" type="text" placeholder="{">
+                    <input id="closeQuote" type="text" placeholder="}">
+                    <button onclick="animateParrot(); applyQuotes()">Apply</button>
+                    <button onclick="animateParrot(); resetQuotes()">Reset</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>Sigil:</label>
+                    <input id="sigilInput" type="text" placeholder="$">
+                    <button onclick="animateParrot(); applySigil()">Apply</button>
+                    <button onclick="animateParrot(); resetSigil()">Reset</button>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <span id="status" class="status">READY</span>
+            </div>
         </div>
     </div>
 
     <script>
-        // Variável para armazenar o conteúdo do header
         let headerContent = '';
-
-        // Carregar core.js
         const coreScript = document.createElement('script');
-        coreScript.src = 'painho.js';
+        coreScript.src = 'papagaio.js';
         document.head.appendChild(coreScript);
 
         coreScript.onload = () => {
-            console.log('core loaded!');
+            updateStatus('CORE LOADED');
         };
+
+        function animateParrot() {
+            const header = document.getElementById('header');
+            header.classList.add('animate-parrot');
+            setTimeout(() => {
+                header.classList.remove('animate-parrot');
+            }, 500);
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
 
         function processCode() {
             try {
                 const input = document.getElementById('input').value;
-                const status = document.getElementById('status');
-                
-                if (!window.painho) {
-                    status.textContent = 'core not loaded...';
-                    status.classList.add('error');
+                if (!window.papagaio) {
+                    updateStatus('CORE NOT LOADED');
                     return;
                 }
-                
-                status.textContent = 'processing...';
-                status.classList.remove('error');
-                
-                // Concatenar header com o conteúdo do input (implicitamente)
+                updateStatus('PROCESSING...');
                 const fullInput = headerContent + input;
-                const output = window.painho(fullInput);
+                const output = window.papagaio(fullInput);
                 document.getElementById('output').value = output;
-                status.textContent = 'deu bom papai!';
+                updateStatus('COMPLETED ✅');
             } catch (err) {
-                document.getElementById('output').value = `Erro: ${err.message}`;
-                status.textContent = 'deu ruim papai!';
-                status.classList.add('error');
+                document.getElementById('output').value = `Error: ${err.message}`;
+                updateStatus('ERROR ❌');
             }
         }
 
@@ -231,6 +351,7 @@
                 reader.onload = (e) => {
                     document.getElementById('input').value = e.target.result;
                     document.getElementById('fileInput').value = '';
+                    updateStatus('FILE LOADED');
                 };
                 reader.readAsText(file);
             }
@@ -239,7 +360,7 @@
         function downloadResult() {
             const output = document.getElementById('output').value;
             if (!output) {
-                alert('nothing to download!');
+                alert('Nothing to download!');
                 return;
             }
             const blob = new Blob([output], { type: 'text/plain' });
@@ -249,19 +370,19 @@
             a.download = 'output.txt';
             a.click();
             URL.revokeObjectURL(url);
+            updateStatus('DOWNLOAD COMPLETED');
         }
 
         function clearAll() {
             document.getElementById('input').value = '';
             document.getElementById('output').value = '';
-            document.getElementById('status').textContent = 'done';
-            document.getElementById('status').classList.remove('error');
+            updateStatus('CLEARED 🗑️');
         }
 
-        // Permite processar com Ctrl+Enter
         document.getElementById('input').addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
-                painho();
+                animateParrot();
+                processCode();
             }
         });
 
@@ -269,7 +390,7 @@
             const o = document.getElementById('openQuote').value;
             const c = document.getElementById('closeQuote').value;
             if (!o || !c) {
-                alert('invalid quotes');
+                alert('Enter both delimiters');
                 return;
             }
             if (!window.changeQuote) {
@@ -277,8 +398,7 @@
                 return;
             }
             changeQuote(o, c);
-            document.getElementById('status').textContent = `quotes updated to ${o} ${c}`;
-            document.getElementById('status').classList.remove('error');
+            updateStatus('DELIMITERS APPLIED');
         }
 
         function resetQuotes() {
@@ -289,43 +409,32 @@
             changeQuote('{', '}');
             document.getElementById('openQuote').value = '';
             document.getElementById('closeQuote').value = '';
-            document.getElementById('status').textContent = 'quotes reset';
-            document.getElementById('status').classList.remove('error');
+            updateStatus('DELIMITERS RESET');
         }
-
 
         function applySigil() {
             const s = document.getElementById('sigilInput').value;
-            const status = document.getElementById('status');
-
             if (!s) {
-                alert('invalid sigil');
+                alert('Enter a sigil');
                 return;
             }
             if (!window.changeSigil) {
                 alert('changeSigil() not available');
                 return;
             }
-
             changeSigil(s);
-            status.textContent = `sigil updated to ${s}`;
-            status.classList.remove('error');
+            updateStatus('SIGIL APPLIED');
         }
 
         function resetSigil() {
-            const status = document.getElementById('status');
-
             if (!window.changeSigil) {
                 alert('changeSigil() not available');
                 return;
             }
-
             changeSigil('$');
             document.getElementById('sigilInput').value = '';
-            status.textContent = 'sigil reset';
-            status.classList.remove('error');
+            updateStatus('SIGIL RESET');
         }
-
     </script>
 </body>
 </html>
