@@ -1,9 +1,9 @@
 // ============================================
-// papagaio - Class-based implementation
+// papagaio - a easy to use preprocessor
 // ============================================
 
 class Papagaio {
-    version = "0.0.8";
+    version = "0.1.1";
     maxRecursion = 512;
     
     // Private state
@@ -336,43 +336,89 @@ class Papagaio {
         return [macros, src];
     }
 
+    #patternDepthAt(src, pos) {
+        const open = "pattern";
+        let depth = 0;
+
+        // scaneia até 'pos' contando quantos pattern{ e } ocorreram
+        let i = 0;
+        while (i < pos) {
+            // identificação de pattern{
+            if (src.startsWith("pattern", i)) {
+                let j = i + 7;
+                while (j < src.length && /\s/.test(src[j])) j++;
+
+                if (src[j] === "{") {
+                    depth++;
+                }
+            }
+
+            if (src[i] === "}") {
+                if (depth > 0) depth--;
+            }
+
+            i++;
+        }
+
+        return depth;
+    }
+
+
     #collectPatterns(src) {
         const patterns = [];
         const open = this.#getDefaultOpen();
-        const patternRegex = new RegExp(`\\bpattern\\s*\\${open}`, "g");
+        const close = this.#getDefaultClose();
+        const patternRegex = /\bpattern\s*\{/g;
 
-        let match;
-        const matches = [];
+        let resultSrc = src;
+        let out = "";
+        let i = 0;
 
-        while ((match = patternRegex.exec(src)) !== null) {
-            matches.push({
-                matchStart: match.index,
-                openPos: match.index + match[0].length - 1
-            });
-        }
+        while (i < resultSrc.length) {
+            patternRegex.lastIndex = i;
+            const m = patternRegex.exec(resultSrc);
+            if (!m) break;
 
-        for (let j = matches.length - 1; j >= 0; j--) {
-            const m = matches[j];
-            const [matchPattern, posAfterMatch] = this.#extractBlock(src, m.openPos);
+            const start = m.index;
+
+            // Antes de aceitar, precisamos saber se estamos dentro de outro pattern
+            const depth = this.#patternDepthAt(resultSrc, start);
+
+            if (depth > 0) {
+                // pattern interno: pula, não coleta, não remove
+                i = start + 1;
+                continue;
+            }
+
+            // Coletar pattern de nível global
+            const openPos = m.index + m[0].length - 1;
+            const [matchPattern, posAfterMatch] = this.#extractBlock(resultSrc, openPos);
 
             let k = posAfterMatch;
-            while (k < src.length && /\s/.test(src[k])) k++;
+            while (k < resultSrc.length && /\s/.test(resultSrc[k])) k++;
 
-            if (k < src.length && src[k] === open) {
-                const [replacePattern, posAfterReplace] = this.#extractBlock(src, k);
+            if (k < resultSrc.length && resultSrc[k] === open) {
+                const [replacePattern, posAfterReplace] = this.#extractBlock(resultSrc, k);
 
                 patterns.push({
                     match: matchPattern.trim(),
                     replace: replacePattern.trim()
                 });
 
-                let left = src.substring(0, m.matchStart);
-                let right = src.substring(posAfterReplace);
-                src = this.#collapseLocalNewlines(left, right);
+                // Remove o bloco completo do src
+                resultSrc =
+                    resultSrc.slice(0, start) +
+                    resultSrc.slice(posAfterReplace);
+
+                // Continua logo após o ponto removido
+                i = start;
+                continue;
             }
+
+            i = start + 1;
         }
 
-        return [patterns, src];
+        return [patterns, resultSrc];
     }
 
     #applyPatterns(src, patterns) {
