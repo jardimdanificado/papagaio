@@ -3,8 +3,8 @@
 // ============================================
 
 class Papagaio {
-    #version = "0.0.8";
-    #MAX_ITERATIONS = 512;
+    version = "0.0.8";
+    maxRecursion = 512;
     
     // Private state
     #counterState = { value: 0, unique: 0 };
@@ -14,10 +14,10 @@ class Papagaio {
     sigil = "$";
     
     // Public state - processing state
-    currentContent = "";
-    matchContent = "";
-    localContent = "";
-    evalContent = "";
+    content = "";
+    #matchContent = "";
+    #scopeContent = "";
+    #evalContent = "";
 
     constructor() {
         this.#resetCounterState();
@@ -28,39 +28,51 @@ class Papagaio {
     // ============================================
 
     process(input) {
-        this.currentContent = input;
+        this.content = input;
+
         let src = input;
+        let last = null;
+        let iter = 0;
 
-        // passagem principal
-        src = this.#processLocalBlocks(src);
-        src = this.#processEvalBlocks(src);
+        const open = this.#getDefaultOpen();   // delimitador atual
+        const close = this.#getDefaultClose();
 
-        const [macros, s1] = this.#collectMacros(src);
-        src = s1;
-
-        const [patterns, s2] = this.#collectPatterns(src);
-        src = s2;
-
-        src = this.#applyPatterns(src, patterns);
-        src = this.#expandMacros(src, macros);
-
-        this.currentContent = src;
-        return src;
-    }
-
-    getState() {
-        return {
-            currentContent: this.currentContent,
-            matchContent: this.matchContent,
-            localContent: this.localContent,
-            evalContent: this.evalContent,
-            delimiters: this.delimiters,
-            sigil: this.sigil
+        // regex para detectar blocos papagaio remanescentes
+        const pending = () => {
+            const rEval    = new RegExp(`\\beval\\s*\\${open}`, "g");
+            const rScope   = new RegExp(`\\bscope\\s*\\${open}`, "g");
+            const rPattern = new RegExp(`\\bpattern\\s*\\${open}`, "g");
+            const rMacro   = new RegExp(`\\bmacro\\s+[A-Za-z_][A-Za-z0-9_]*\\s*\\${open}`, "g");
+            return rEval.test(src)
+                || rScope.test(src)
+                || rPattern.test(src)
+                || rMacro.test(src);
         };
-    }
 
-    resetCounters() {
-        this.#resetCounterState();
+        // fixpoint loop
+        while (src !== last && iter < this.maxRecursion) {
+            iter++;
+            last = src;
+
+            // --- pipeline padrão ---
+            src = this.#processScopeBlocks(src);
+            src = this.#processEvalBlocks(src);
+
+            const [macros, s1] = this.#collectMacros(src);
+            src = s1;
+
+            const [patterns, s2] = this.#collectPatterns(src);
+            src = s2;
+
+            src = this.#applyPatterns(src, patterns);
+            src = this.#expandMacros(src, macros);
+
+            // --- se sobrou bloco papagaio → roda de novo ---
+            if (!pending()) break;
+        }
+
+        this.content = src;
+        return src;
     }
 
     // ============================================
@@ -372,7 +384,7 @@ class Papagaio {
             let changed = true;
             let iterations = 0;
 
-            while (changed && iterations < this.#MAX_ITERATIONS) {
+            while (changed && iterations < this.maxRecursion) {
                 changed = false;
                 iterations++;
 
@@ -391,7 +403,7 @@ class Papagaio {
                         varMap[varNames[i]] = captures[i] || '';
                     }
 
-                    this.matchContent = fullMatch;
+                    this.#matchContent = fullMatch;
 
                     const _pre = src.slice(0, matchStart);
                     const _post = src.slice(matchEnd);
@@ -444,7 +456,7 @@ class Papagaio {
             let changed = true;
             let iterations = 0;
 
-            while (changed && iterations < this.#MAX_ITERATIONS) {
+            while (changed && iterations < this.maxRecursion) {
                 changed = false;
                 iterations++;
 
@@ -523,7 +535,7 @@ class Papagaio {
             const m = matches[j];
 
             const [content, posAfter] = this.#extractBlock(src, m.openPos);
-            this.evalContent = content;
+            this.#evalContent = content;
 
             let out = "";
             try {
@@ -545,14 +557,14 @@ class Papagaio {
         return src;
     }
 
-    #processLocalBlocks(src) {
+    #processScopeBlocks(src) {
         const open = this.#getDefaultOpen();
-        const localRegex = new RegExp(`\\blocal\\s*\\${open}`, "g");
+        const scopeRegex = new RegExp(`\\bscope\\s*\\${open}`, "g");
 
         let match;
         const matches = [];
 
-        while ((match = localRegex.exec(src)) !== null) {
+        while ((match = scopeRegex.exec(src)) !== null) {
             matches.push({
                 matchStart: match.index,
                 openPos: match.index + match[0].length - 1
@@ -563,7 +575,7 @@ class Papagaio {
             const m = matches[j];
             const [content, posAfter] = this.#extractBlock(src, m.openPos);
 
-            this.localContent = content;
+            this.#scopeContent = content;
             const processedContent = this.process(content);
 
             let left = src.substring(0, m.matchStart);
