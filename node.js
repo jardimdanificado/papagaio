@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Papagaio } from "./src/papagaio.js";
+import { Papagaio } from "./papagaio.js";
 import fs from "fs";
 
 const file = process.argv[2];
