@@ -301,7 +301,7 @@ You can change them at runtime:
 
 ```
 
-pap.delimiters = [["<", ">"], ["{", "}"]];
+papagaio.delimiters = [["<", ">"], ["{", "}"]];
 
 ```
 
@@ -309,7 +309,7 @@ pap.delimiters = [["<", ">"], ["{", "}"]];
 
 ```
 
-pap.delimiters = [["<", ">"]];
+papagaio.delimiters = [["<", ">"]];
 
 pattern{<tag $x>}{TAG=$x} <tag content>
 
@@ -331,7 +331,7 @@ Default: `$`. Can be changed:
 
 ```
 
-pap.sigil = "@";
+papagaio.sigil = "@";
 pattern{hello @x}{H=@x}
 hello world
 
@@ -353,8 +353,8 @@ H=world
 
 ```
 
-pap.keywords.pattern = "macro";
-pap.keywords.context = "scope";
+papagaio.keywords.pattern = "macro";
+papagaio.keywords.context = "scope";
 
 ```
 ```
@@ -380,7 +380,7 @@ Hi World
 
 ```
 
-pattern{setdelim}{$eval{ pap.delimiters=[["<",">"]]; return "";} }
+pattern{setdelim}{$eval{ papagaio.delimiters=[["<",">"]]; return "";} }
 setdelim <hello>
 
 ```
@@ -391,8 +391,8 @@ setdelim <hello>
 
 ```
 
-pap.keywords.pattern = "::";
-pap.sigil = "%";
+papagaio.keywords.pattern = "::";
+papagaio.sigil = "%";
 
 ::{hello %x}{HELLO %x}
 hello world
@@ -591,13 +591,6 @@ All mutable at runtime.
 
 ---
 
-# 10. Summary
-
-Papagaio is a powerful text transformation engine. By combining recursive patterns, isolated contexts, configurable sigils, mutable delimiters, and `$eval`, you can build full DSLs, templating engines, mini-transpilers, or entirely new macro systems directly within text.
-
-Perfect. Let’s expand the README with **advanced topics** that push Papagaio into full meta-programming territory. I’ll add new sections on **self-modifying patterns, hybrid pipelines, self-referential patterns, Lisp-style macros, and advanced transpiler flows**. Everything stays text-focused; JavaScript API calls remain just `process(text)`.
-
----
 
 # 11. Self-Modifying Patterns
 
@@ -635,8 +628,8 @@ You can combine multiple processing passes with different delimiters, sigils, an
 
 ```
 
-pap.delimiters = [["<", ">"], ["{", "}"]];
-pap.sigil = "$";
+papagaio.delimiters = [["<", ">"], ["{", "}"]];
+papagaio.sigil = "$";
 
 pattern{<bold $x>}{**$x**}
 pattern{# $t}{<h1>$t</h1>}
@@ -740,7 +733,7 @@ You can extend this by defining multiple layers of contexts, dynamically switchi
 ### 16.1 Change delimiters mid-process
 
 ```
-pattern{switch}{ $eval{ pap.delimiters=[["<",">"]]; return ""; } }
+pattern{switch}{ $eval{ papagaio.delimiters=[["<",">"]]; return ""; } }
 switch
 <hello>
 ```
@@ -754,7 +747,7 @@ hello
 ### 16.2 Dynamic sigil change
 
 ```
-pattern{sigil}{ $eval{ pap.sigil="@"; return ""; } }
+pattern{sigil}{ $eval{ papagaio.sigil="@"; return ""; } }
 sigil
 @var
 ```
@@ -768,7 +761,7 @@ var
 ### 16.3 Keywords swapping
 
 ```
-pattern{switch_keywords}{ $eval{ pap.keywords.pattern="macro"; pap.keywords.context="scope"; return ""; } }
+pattern{switch_keywords}{ $eval{ papagaio.keywords.pattern="macro"; papagaio.keywords.context="scope"; return ""; } }
 switch_keywords
 macro{X}{Y}
 ```
@@ -800,18 +793,3 @@ Y
 * Delimiters and sigils can be swapped mid-processing for DSL adaptation.
 * Always trim input to avoid unintended whitespace captures with `...` patterns.
 
----
-
-# 19. Summary
-
-With self-modifying patterns, hybrid pipelines, recursive expansions, Lisp-style macros, and dynamic runtime hacks, Papagaio is a **full meta-programming framework** entirely based on text. You can:
-
-* Build DSLs
-* Create macro engines
-* Implement templating pipelines
-* Write mini-transpilers
-* Automate complex text generation
-
-Everything is declarative in the text, and runtime manipulation of delimiters, sigils, and keywords allows infinite flexibility.
-
----
