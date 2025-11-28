@@ -9,11 +9,15 @@ export class Papagaio {
     #counterState = { value: 0, unique: 0 };
     
     // Public configuration
-    delimiters = [["{", "}"]];
+    delimiters = [
+        ["{", "}"],
+        ["[", "]"],
+        ["(", ")"],
+    ];
     sigil = "$";
     keywords = {
         pattern: "pattern",
-        scope: "scope"
+        context: "context"
     };
     
     // Public state - processing state
@@ -39,9 +43,9 @@ export class Papagaio {
 
         // regex para detectar blocos papagaio remanescentes
         const pending = () => {
-            const rScope   = new RegExp(`\\b${this.keywords.scope}\\s*\\${open}`, "g");
+            const rContext   = new RegExp(`\\b${this.keywords.context}\\s*\\${open}`, "g");
             const rPattern = new RegExp(`\\b${this.keywords.pattern}\\s*\\${open}`, "g");
-            return rScope.test(src)
+            return rContext.test(src)
                 || rPattern.test(src)
         };
 
@@ -51,7 +55,7 @@ export class Papagaio {
             last = src;
 
             // --- pipeline padrão ---
-            src = this.#processScopeBlocks(src);
+            src = this.#processContextBlocks(src);
 
             const [patterns, s2] = this.#collectPatterns(src);
             src = s2;
@@ -483,14 +487,14 @@ export class Papagaio {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    #processScopeBlocks(src) {
+    #processContextBlocks(src) {
         const open = this.#getDefaultOpen();
-        const scopeRegex = new RegExp(`\\b${this.keywords.scope}\\s*\\${open}`, "g");
+        const contextRegex = new RegExp(`\\b${this.keywords.context}\\s*\\${open}`, "g");
 
         let match;
         const matches = [];
 
-        while ((match = scopeRegex.exec(src)) !== null) {
+        while ((match = contextRegex.exec(src)) !== null) {
             matches.push({
                 matchStart: match.index,
                 openPos: match.index + match[0].length - 1
@@ -500,6 +504,12 @@ export class Papagaio {
         for (let j = matches.length - 1; j >= 0; j--) {
             const m = matches[j];
             const [content, posAfter] = this.#extractBlock(src, m.openPos);
+
+            if (!content.trim()) {
+                // Contexto vazio → apenas remove a palavra "context" mas mantém o resto intacto
+                src = src.slice(0, m.matchStart) + src.slice(posAfter);
+                continue;
+            }
 
             const processedContent = this.process(content);
 
@@ -517,6 +527,4 @@ export class Papagaio {
 
         return src;
     }
-
-
 }
