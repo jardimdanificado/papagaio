@@ -16,8 +16,6 @@ class Papagaio {
     // Public state - processing state
     currentContent = "";
     matchContent = "";
-    earlyContent = "";
-    lateContent = "";
     localContent = "";
     evalContent = "";
 
@@ -33,9 +31,6 @@ class Papagaio {
         this.currentContent = input;
         let src = input;
 
-        // pré-passagem
-        src = this.#processEarlyBlocks(src);
-
         // passagem principal
         src = this.#processLocalBlocks(src);
         src = this.#processEvalBlocks(src);
@@ -49,9 +44,6 @@ class Papagaio {
         src = this.#applyPatterns(src, patterns);
         src = this.#expandMacros(src, macros);
 
-        // pós-passagem
-        src = this.#processLateBlocks(src);
-
         this.currentContent = src;
         return src;
     }
@@ -60,8 +52,6 @@ class Papagaio {
         return {
             currentContent: this.currentContent,
             matchContent: this.matchContent,
-            earlyContent: this.earlyContent,
-            lateContent: this.lateContent,
             localContent: this.localContent,
             evalContent: this.evalContent,
             delimiters: this.delimiters,
@@ -537,9 +527,11 @@ class Papagaio {
 
             let out = "";
             try {
+                // O conteúdo é o corpo de uma função autoinvocada
+                const wrappedCode = `"use strict"; return (function() { ${content} })();`;
+
                 out = String(
-                    Function("papagaio", "ctx", `"use strict"; return (${content});`)
-                    (this, {})
+                    Function("papagaio", "ctx", wrappedCode)(this, {})
                 );
             } catch (e) {
                 out = "";
@@ -589,59 +581,7 @@ class Papagaio {
         return src;
     }
 
-    #processEarlyBlocks(src) {
-        const open = this.#getDefaultOpen();
-        const re = new RegExp(`\\bearly\\s*\\${open}`, "g");
-        let match;
-        const matches = [];
 
-        while ((match = re.exec(src)) !== null) {
-            matches.push({
-                matchStart: match.index,
-                openPos: match.index + match[0].length - 1
-            });
-        }
-
-        for (let j = matches.length - 1; j >= 0; j--) {
-            const m = matches[j];
-
-            const [content, posAfter] = this.#extractBlock(src, m.openPos);
-            this.earlyContent = content;
-
-            const out = this.#processEarlyBlocks(content);
-
-            src = src.substring(0, m.matchStart) + out + src.substring(posAfter);
-        }
-
-        return src;
-    }
-
-    #processLateBlocks(src) {
-        const open = this.#getDefaultOpen();
-        const re = new RegExp(`\\blate\\s*\\${open}`, "g");
-        let match;
-        const matches = [];
-
-        while ((match = re.exec(src)) !== null) {
-            matches.push({
-                matchStart: match.index,
-                openPos: match.index + match[0].length - 1
-            });
-        }
-
-        for (let j = matches.length - 1; j >= 0; j--) {
-            const m = matches[j];
-
-            const [content, posAfter] = this.#extractBlock(src, m.openPos);
-            this.lateContent = content;
-
-            const out = this.#processLateBlocks(content);
-
-            src = src.substring(0, m.matchStart) + out + src.substring(posAfter);
-        }
-
-        return src;
-    }
 }
 
 // Export para diferentes ambientes
