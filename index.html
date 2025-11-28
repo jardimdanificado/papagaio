@@ -301,14 +301,29 @@
     </div>
 
     <script>
+        let processor = null;
         let headerContent = '';
-        const coreScript = document.createElement('script');
-        coreScript.src = 'papagaio.js';
-        document.head.appendChild(coreScript);
 
-        coreScript.onload = () => {
-            updateStatus('CORE LOADED');
-        };
+        // Simulação do Papagaio class (seria importado do papagaio.js)
+        // Assumindo que a classe está disponível como window.Papagaio
+        
+        function initProcessor() {
+            if (typeof Papagaio !== 'undefined') {
+                processor = new Papagaio();
+                updateStatus('CORE LOADED');
+            } else {
+                updateStatus('CORE NOT LOADED');
+            }
+        }
+
+        // Tenta inicializar quando a página carrega
+        window.addEventListener('load', initProcessor);
+
+        // Se o Papagaio for carregado dinamicamente
+        const script = document.createElement('script');
+        script.src = 'papagaio.js';
+        script.onload = initProcessor;
+        document.head.appendChild(script);
 
         function animateParrot() {
             const header = document.getElementById('header');
@@ -324,14 +339,14 @@
 
         function processCode() {
             try {
-                const input = document.getElementById('input').value;
-                if (!window.papagaio) {
+                if (!processor) {
                     updateStatus('CORE NOT LOADED');
                     return;
                 }
                 updateStatus('PROCESSING...');
+                const input = document.getElementById('input').value;
                 const fullInput = headerContent + input;
-                const output = window.papagaio(fullInput);
+                const output = processor.process(fullInput);
                 document.getElementById('output').value = output;
                 updateStatus('COMPLETED ✅');
             } catch (err) {
@@ -393,20 +408,20 @@
                 alert('Enter both delimiters');
                 return;
             }
-            if (!window.changeQuote) {
-                alert('changeQuote() not available');
+            if (!processor) {
+                alert('Processor not available');
                 return;
             }
-            changeQuote(o, c);
+            processor.changeDelimiters(o, c);
             updateStatus('DELIMITERS APPLIED');
         }
 
         function resetQuotes() {
-            if (!window.changeQuote) {
-                alert('changeQuote() not available');
+            if (!processor) {
+                alert('Processor not available');
                 return;
             }
-            changeQuote('{', '}');
+            processor.changeDelimiters('{', '}');
             document.getElementById('openQuote').value = '';
             document.getElementById('closeQuote').value = '';
             updateStatus('DELIMITERS RESET');
@@ -418,20 +433,20 @@
                 alert('Enter a sigil');
                 return;
             }
-            if (!window.changeSigil) {
-                alert('changeSigil() not available');
+            if (!processor) {
+                alert('Processor not available');
                 return;
             }
-            changeSigil(s);
+            processor.changeSigil(s);
             updateStatus('SIGIL APPLIED');
         }
 
         function resetSigil() {
-            if (!window.changeSigil) {
-                alert('changeSigil() not available');
+            if (!processor) {
+                alert('Processor not available');
                 return;
             }
-            changeSigil('$');
+            processor.changeSigil('$');
             document.getElementById('sigilInput').value = '';
             updateStatus('SIGIL RESET');
         }
