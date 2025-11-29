@@ -1,5 +1,5 @@
 // ============================================
-// papagaio - a easy to use preprocessor
+// papagaio - a easy to use preprocessor (simplified)
 // ============================================
 
 export class Papagaio {
@@ -9,11 +9,8 @@ export class Papagaio {
     #counterState = { value: 0, unique: 0 };
     
     // Public configuration
-    delimiters = [
-        ["{", "}"],
-        ["[", "]"],
-        ["(", ")"],
-    ];
+    open = "{";
+    close = "}";
     sigil = "$";
     keywords = {
         pattern: "pattern",
@@ -38,15 +35,11 @@ export class Papagaio {
         let last = null;
         let iter = 0;
 
-        const open = this.#getDefaultOpen();   // delimitador atual
-        const close = this.#getDefaultClose();
-
         // regex para detectar blocos papagaio remanescentes
         const pending = () => {
-            const rContext   = new RegExp(`\\b${this.keywords.context}\\s*\\${open}`, "g");
-            const rPattern = new RegExp(`\\b${this.keywords.pattern}\\s*\\${open}`, "g");
-            return rContext.test(src)
-                || rPattern.test(src)
+            const rContext = new RegExp(`\\b${this.keywords.context}\\s*\\${this.open}`, "g");
+            const rPattern = new RegExp(`\\b${this.keywords.pattern}\\s*\\${this.open}`, "g");
+            return rContext.test(src) || rPattern.test(src);
         };
 
         // fixpoint loop
@@ -83,29 +76,7 @@ export class Papagaio {
         return "u" + (this.#counterState.unique++).toString(36);
     }
 
-    #findClosingDelim(open) {
-        for (const [o, c] of this.delimiters) {
-            if (o === open) return c;
-        }
-        return null;
-    }
-
-    #isRegisteredOpen(ch) {
-        return this.delimiters.some(([o, _]) => o === ch);
-    }
-
-    #getDefaultOpen() {
-        return this.delimiters[0][0];
-    }
-
-    #getDefaultClose() {
-        return this.delimiters[0][1];
-    }
-
-    #extractBlock(src, openpos, open = null, close = null) {
-        if (!open) open = this.#getDefaultOpen();
-        if (!close) close = this.#getDefaultClose();
-
+    #extractBlock(src, openpos) {
         let i = openpos;
         let depth = 0;
         let startInner = null;
@@ -129,10 +100,10 @@ export class Papagaio {
                 }
             }
 
-            if (ch === open) {
+            if (ch === this.open) {
                 depth++;
                 if (startInner === null) startInner = i + 1;
-            } else if (ch === close) {
+            } else if (ch === this.close) {
                 depth--;
                 if (depth === 0) {
                     const inner = startInner !== null ? src.substring(startInner, i) : '';
@@ -153,8 +124,7 @@ export class Papagaio {
 
         const S = this.sigil;
         const S2 = this.sigil + this.sigil;
-        const open = this.#getDefaultOpen();
-        const close = this.#getDefaultClose();
+        const balancedInfo = [];
 
         while (i < pattern.length) {
             if (pattern.startsWith(S2, i)) {
@@ -163,21 +133,52 @@ export class Papagaio {
                 continue;
             }
 
-            if (this.#isRegisteredOpen(pattern[i]) && pattern.startsWith(S, i + 1)) {
-                const openDelim = pattern[i];
-                const closeDelim = this.#findClosingDelim(openDelim);
-
-                let j = i + 1 + S.length;
-                while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) j++;
-
-                if (j < pattern.length && pattern[j] === closeDelim) {
-                    const escapedOpen = this.#escapeRegex(openDelim);
-                    const escapedClose = this.#escapeRegex(closeDelim);
-                    const innerRegex = this.#buildBalancedBlockRegex(openDelim, closeDelim);
-
-                    regex += `${escapedOpen}(${innerRegex})${escapedClose}`;
-                    i = j + 1;
-                    continue;
+            // Detect: $block {name} {open} {close}
+            if (pattern.startsWith(S + 'block', i)) {
+                let j = i + S.length + 'block'.length;
+                
+                // Skip whitespace
+                while (j < pattern.length && /\s/.test(pattern[j])) j++;
+                
+                // Extract {name}
+                if (j < pattern.length && pattern[j] === this.open) {
+                    const [nameContent, nameEnd] = this.#extractBlock(pattern, j);
+                    const varName = nameContent.trim();
+                    j = nameEnd;
+                    
+                    // Skip whitespace
+                    while (j < pattern.length && /\s/.test(pattern[j])) j++;
+                    
+                    // Extract {open}
+                    let openDelim = this.open;
+                    if (j < pattern.length && pattern[j] === this.open) {
+                        const [openContent, openEnd] = this.#extractBlock(pattern, j);
+                        openDelim = openContent.trim() || this.open;
+                        j = openEnd;
+                        
+                        // Skip whitespace
+                        while (j < pattern.length && /\s/.test(pattern[j])) j++;
+                    }
+                    
+                    // Extract {close}
+                    let closeDelim = this.close;
+                    if (j < pattern.length && pattern[j] === this.open) {
+                        const [closeContent, closeEnd] = this.#extractBlock(pattern, j);
+                        closeDelim = closeContent.trim() || this.close;
+                        
+                        // Armazena info de balanced para processar depois
+                        balancedInfo.push({
+                            index: regex.length,
+                            openDelim,
+                            closeDelim
+                        });
+                        
+                        // Adiciona placeholder
+                        regex += '(BALANCED_CAPTURE)';
+                        
+                        i = closeEnd;
+                        continue;
+                    }
                 }
             }
 
@@ -187,32 +188,6 @@ export class Papagaio {
                 while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) {
                     varName += pattern[j];
                     j++;
-                }
-
-                if (varName && pattern.slice(j, j + 3) === '...') {
-                    j += 3;
-                    let token = '';
-                    while (j < pattern.length && /\S/.test(pattern[j])) {
-                        token += pattern[j];
-                        j++;
-                    }
-
-                    // Aqui convertemos o token em uma parte de regex:
-                    // - qualquer ocorrência de $$ (S2) vira \s*
-                    // - o restante é escapado apropriadamente
-                    let tokenRegex = '';
-                    if (token.length === 0) {
-                        tokenRegex = ''; // sem token → apenas captura sem terminador
-                    } else {
-                        // dividir pelo S2 e escapar cada pedaço literal
-                        const parts = token.split(S2);
-                        tokenRegex = parts.map(p => this.#escapeRegex(p)).join('\\s*');
-                    }
-
-                    // captura não-gulosa para o ... seguida do token interpretado
-                    regex += `((?:.|\\r|\\n)*?)${tokenRegex}`;
-                    i = j;
-                    continue;
                 }
 
                 if (varName) {
@@ -237,40 +212,62 @@ export class Papagaio {
             i++;
         }
 
-        return new RegExp(regex, 'g');
+        // Agora substitui os placeholders por regex balanceados reais
+        let finalRegex = regex;
+        for (let idx = balancedInfo.length - 1; idx >= 0; idx--) {
+            const info = balancedInfo[idx];
+            const escapedOpen = this.#escapeRegex(info.openDelim);
+            const escapedClose = this.#escapeRegex(info.closeDelim);
+            
+            // Regex para capturar balanceado
+            const balancedRegex = `${escapedOpen}([\\s\\S]*?)${escapedClose}`;
+            finalRegex = finalRegex.replace('(BALANCED_CAPTURE)', balancedRegex);
+        }
+
+        return new RegExp(finalRegex, 'g');
     }
 
-
-    #buildBalancedBlockRegex(open, close) {
-        const escapedOpen = open === '(' ? '\\(' : (open === '[' ? '\\[' : open === '{' ? '\\{' : open === '<' ? '\\<' : open);
-        const escapedClose = close === ')' ? '\\)' : (close === ']' ? '\\]' : close === '}' ? '\\}' : close === '>' ? '\\>' : close);
-
-        return `(?:[^${escapedOpen}${escapedClose}\\\\]|\\\\.|${escapedOpen}(?:[^${escapedOpen}${escapedClose}\\\\]|\\\\.)*${escapedClose})*`;
-    }
-
-    #extractVarNames(pattern) {
+    #extractVarNamesWithBalanced(pattern) {
         const vars = [];
         const seen = new Set();
         const S = this.sigil;
         let i = 0;
 
         while (i < pattern.length) {
-            if (this.#isRegisteredOpen(pattern[i]) && pattern.startsWith(S, i + 1)) {
-                const openDelim = pattern[i];
-                const closeDelim = this.#findClosingDelim(openDelim);
-
-                let j = i + 1 + S.length;
-                while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) j++;
-
-                if (j < pattern.length && pattern[j] === closeDelim) {
-                    const varName = pattern.slice(i + 1 + S.length, j);
-
-                    if (!seen.has(varName)) {
+            // Detect: $block {name} {open} {close}
+            if (pattern.startsWith(S + 'block', i)) {
+                let j = i + S.length + 'block'.length;
+                
+                // Skip whitespace
+                while (j < pattern.length && /\s/.test(pattern[j])) j++;
+                
+                // Extract {name}
+                if (j < pattern.length && pattern[j] === this.open) {
+                    const [nameContent, nameEnd] = this.#extractBlock(pattern, j);
+                    const varName = nameContent.trim();
+                    
+                    if (varName && !seen.has(varName)) {
                         vars.push(S + varName);
                         seen.add(varName);
                     }
-
-                    i = j + 1;
+                    
+                    j = nameEnd;
+                    
+                    // Skip {open}
+                    while (j < pattern.length && /\s/.test(pattern[j])) j++;
+                    if (j < pattern.length && pattern[j] === this.open) {
+                        this.#extractBlock(pattern, j);
+                        j = this.#extractBlock(pattern, j)[1];
+                    }
+                    
+                    // Skip {close}
+                    while (j < pattern.length && /\s/.test(pattern[j])) j++;
+                    if (j < pattern.length && pattern[j] === this.open) {
+                        this.#extractBlock(pattern, j);
+                        j = this.#extractBlock(pattern, j)[1];
+                    }
+                    
+                    i = j;
                     continue;
                 }
             }
@@ -282,21 +279,6 @@ export class Papagaio {
                 while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) {
                     varName += pattern[j];
                     j++;
-                }
-
-                if (varName && pattern.slice(j, j + 3) === '...') {
-                    j += 3;
-                    let token = '';
-                    while (j < pattern.length && /\S/.test(pattern[j])) {
-                        token += pattern[j];
-                        j++;
-                    }
-                    if (!seen.has(varName)) {
-                        vars.push(S + varName);
-                        seen.add(varName);
-                    }
-                    i = j;
-                    continue;
                 }
 
                 if (varName && !seen.has(varName)) {
@@ -314,23 +296,20 @@ export class Papagaio {
     }
 
     #patternDepthAt(src, pos) {
-        const open = this.keywords.pattern;
         let depth = 0;
 
-        // scaneia até 'pos' contando quantos pattern{ e } ocorreram
         let i = 0;
         while (i < pos) {
-            // identificação de pattern{
             if (src.startsWith(this.keywords.pattern, i)) {
                 let j = i + this.keywords.pattern.length;
                 while (j < src.length && /\s/.test(src[j])) j++;
 
-                if (src[j] === "{") {
+                if (src[j] === this.open) {
                     depth++;
                 }
             }
 
-            if (src[i] === "}") {
+            if (src[i] === this.close) {
                 if (depth > 0) depth--;
             }
 
@@ -340,15 +319,11 @@ export class Papagaio {
         return depth;
     }
 
-
     #collectPatterns(src) {
         const patterns = [];
-        const open = this.#getDefaultOpen();
-        const close = this.#getDefaultClose();
-        const patternRegex = new RegExp(`\\b${this.keywords.pattern}\\s*\\{`, "g");
+        const patternRegex = new RegExp(`\\b${this.keywords.pattern}\\s*\\${this.open}`, "g");
 
         let resultSrc = src;
-        let out = "";
         let i = 0;
 
         while (i < resultSrc.length) {
@@ -358,23 +333,20 @@ export class Papagaio {
 
             const start = m.index;
 
-            // Antes de aceitar, precisamos saber se estamos dentro de outro pattern
             const depth = this.#patternDepthAt(resultSrc, start);
 
             if (depth > 0) {
-                // pattern interno: pula, não coleta, não remove
                 i = start + 1;
                 continue;
             }
 
-            // Coletar pattern de nível global
             const openPos = m.index + m[0].length - 1;
             const [matchPattern, posAfterMatch] = this.#extractBlock(resultSrc, openPos);
 
             let k = posAfterMatch;
             while (k < resultSrc.length && /\s/.test(resultSrc[k])) k++;
 
-            if (k < resultSrc.length && resultSrc[k] === open) {
+            if (k < resultSrc.length && resultSrc[k] === this.open) {
                 const [replacePattern, posAfterReplace] = this.#extractBlock(resultSrc, k);
 
                 patterns.push({
@@ -382,12 +354,10 @@ export class Papagaio {
                     replace: replacePattern.trim()
                 });
 
-                // Remove o bloco completo do src
                 resultSrc =
                     resultSrc.slice(0, start) +
                     resultSrc.slice(posAfterReplace);
 
-                // Continua logo após o ponto removido
                 i = start;
                 continue;
             }
@@ -412,7 +382,7 @@ export class Papagaio {
                 iterations++;
 
                 const regex = this.#patternToRegex(pattern.match);
-                const varNames = this.#extractVarNames(pattern.match);
+                const varNames = this.#extractVarNamesWithBalanced(pattern.match);
 
                 src = src.replace(regex, (...args) => {
                     changed = true;
@@ -426,8 +396,8 @@ export class Papagaio {
                         varMap[varNames[i]] = captures[i] || '';
                     }
 
-                    const _pre = src.slice(0, matchStart);
-                    const _post = src.slice(matchEnd);
+                    const _prefix = src.slice(0, matchStart);
+                    const _suffix = src.slice(matchEnd);
 
                     let result = pattern.replace;
 
@@ -442,7 +412,6 @@ export class Papagaio {
 
                     result = result.replace(/\$eval\{([^}]*)\}/g, (_, code) => {
                         try {
-                            // O conteúdo é o corpo de uma função autoinvocada
                             const wrappedCode = `"use strict"; return (function() { ${code} })();`;
 
                             let out = String(
@@ -464,8 +433,8 @@ export class Papagaio {
                     }
 
                     result = result
-                        .replace(new RegExp(`${this.#escapeRegex(S)}pre\\b`, 'g'), _pre)
-                        .replace(new RegExp(`${this.#escapeRegex(S)}post\\b`, 'g'), _post)
+                        .replace(new RegExp(`${this.#escapeRegex(S)}prefix\\b`, 'g'), _prefix)
+                        .replace(new RegExp(`${this.#escapeRegex(S)}suffix\\b`, 'g'), _suffix)
                         .replace(new RegExp(`${this.#escapeRegex(S)}match\\b`, 'g'), fullMatch);
 
                     lastResult = result;
@@ -483,13 +452,14 @@ export class Papagaio {
         return src;
     }
 
+
+
     #escapeRegex(str) {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
     #processContextBlocks(src) {
-        const open = this.#getDefaultOpen();
-        const contextRegex = new RegExp(`\\b${this.keywords.context}\\s*\\${open}`, "g");
+        const contextRegex = new RegExp(`\\b${this.keywords.context}\\s*\\${this.open}`, "g");
 
         let match;
         const matches = [];
@@ -506,7 +476,6 @@ export class Papagaio {
             const [content, posAfter] = this.#extractBlock(src, m.openPos);
 
             if (!content.trim()) {
-                // Contexto vazio → apenas remove a palavra "context" mas mantém o resto intacto
                 src = src.slice(0, m.matchStart) + src.slice(posAfter);
                 continue;
             }
