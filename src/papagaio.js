@@ -52,8 +52,36 @@ export class Papagaio {
     return src;
   }
 
-  #extractBlock(src, openPos) {
+  #extractBlock(src, openPos, openDelim = this.open, closeDelim = this.close) {
     let i = openPos, depth = 0, innerStart = null, inStr = false, strChar = '';
+    
+    // Se openDelim tem múltiplos caracteres, processa diferente
+    if (openDelim.length > 1) {
+      // Pula o delimitador de abertura
+      if (src.substring(i, i + openDelim.length) === openDelim) {
+        i += openDelim.length;
+        innerStart = i;
+        // Procura pelo delimitador de fechamento com balanceamento
+        let d = 0;
+        while (i < src.length) {
+          if (src.substring(i, i + openDelim.length) === openDelim) {
+            d++;
+            i += openDelim.length;
+          } else if (src.substring(i, i + closeDelim.length) === closeDelim) {
+            if (d === 0) {
+              return [src.substring(innerStart, i), i + closeDelim.length];
+            }
+            d--;
+            i += closeDelim.length;
+          } else {
+            i++;
+          }
+        }
+        return [src.substring(innerStart), src.length];
+      }
+    }
+    
+    // Para delimitadores single-char, balanceia
     while (i < src.length) {
       const ch = src[i];
       if (inStr) {
@@ -62,16 +90,16 @@ export class Papagaio {
         else i++;
         continue;
       }
-      if (ch === '"' || ch === "'" || ch === "`") {
+      if (ch === "'" || ch === "`") {
         inStr = true;
         strChar = ch;
         i++;
         continue;
       }
-      if (ch === this.open) {
+      if (ch === openDelim) {
         depth++;
         if (innerStart === null) innerStart = i + 1;
-      } else if (ch === this.close) {
+      } else if (ch === closeDelim) {
         depth--;
         if (depth === 0) return [innerStart !== null ? src.substring(innerStart, i) : '', i + 1];
       }
@@ -93,7 +121,6 @@ export class Papagaio {
         let j = i + S.length + 'block'.length;
         while (j < pattern.length && /\s/.test(pattern[j])) j++;
         
-        // Extrair nome como identificador simples
         let varName = '';
         while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) {
           varName += pattern[j++];
@@ -102,7 +129,7 @@ export class Papagaio {
         if (varName) {
           while (j < pattern.length && /\s/.test(pattern[j])) j++;
           
-          // Extrair delimitador de abertura
+          // Extrair delimitador de abertura - com balanceamento
           let openDelim = this.open;
           if (j < pattern.length && pattern[j] === this.open) {
             const [c, e] = this.#extractBlock(pattern, j);
@@ -111,17 +138,18 @@ export class Papagaio {
             while (j < pattern.length && /\s/.test(pattern[j])) j++;
           }
           
-          // Extrair delimitador de fechamento
+          // Extrair delimitador de fechamento - com balanceamento
           let closeDelim = this.close;
           if (j < pattern.length && pattern[j] === this.open) {
-            const [c, e] = this.#extractBlock(pattern, j);
+            const [c, e] = this.#extractBlock(pattern, j, this.open, this.close);
             closeDelim = c.trim() || this.close;
             j = e;
           }
           
           const eoMask = this.#escapeRegex(openDelim);
           const ecMask = this.#escapeRegex(closeDelim);
-          regex += `${eoMask}([\\s\\S]*?)${ecMask}`;
+          // Use greedy match to allow nested delimiters to be captured (will match up to the last closing delimiter)
+          regex += `${eoMask}([\\s\\S]*)${ecMask}`;
           i = j;
           continue;
         }
@@ -189,7 +217,6 @@ export class Papagaio {
         i = j;
         continue;
       }
-      // FIX: Checar por $ primeiro (espaço flexível)
       if (pattern.startsWith(S2, i)) {
         i += S2.length;
         continue;
@@ -287,6 +314,6 @@ export class Papagaio {
   }
 
   #escapeRegex(str) {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return str.replace(/[.*+?^${}()|[\]\\\"']/g, '\\$&');
   }
 }

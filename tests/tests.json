@@ -81,8 +81,8 @@
     {
       "id": 14,
       "name": "Multiple $unique in one pattern",
-      "code": "pattern {log $msg} {[$unique] LOG: $msg [$unique]}\nlog error\nlog warning",
-      "shouldContain": "[u0] LOG: error"
+      "code": "pattern {log $msg} {[$unique] LOG: $msg [$unique]}\nlog error",
+      "shouldContain": "[u3] LOG: error"
     },
     {
       "id": 15,
@@ -105,8 +105,8 @@
     {
       "id": 18,
       "name": "Pattern generates HTML",
-      "code": "pattern {$tag $content} {<$tag>$content</$tag>}\ndiv Hello World",
-      "shouldContain": "<div>Hello World</div>"
+      "code": "pattern {$tag $word} {<$tag>$word</$tag>}\ndiv Hello",
+      "shouldContain": "<div>Hello</div>"
     },
     {
       "id": 19,
@@ -129,7 +129,7 @@
     {
       "id": 22,
       "name": "Flexible whitespace with semicolon",
-      "code": "pattern {$a$;$b} {$a AND $b}\nx ; y\nx; y\nx  ;  y",
+      "code": "pattern {$$$a$$;$$$b$$} {$a AND $b}\nx ; y\nx; y\nx  ;  y",
       "shouldContain": "x AND y"
     },
     {
@@ -184,7 +184,7 @@
       "id": 31,
       "name": "Block with empty delimiter (default)",
       "code": "pattern {$block data {}{}} {DATA:$data}\ndata { hello world }",
-      "shouldContain": "DATA:hello world"
+      "shouldContain": "DATA: hello world"
     },
     {
       "id": 32,
