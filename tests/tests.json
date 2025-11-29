@@ -281,6 +281,126 @@
       "name": "Pattern with math symbols",
       "code": "pattern {$x * $y} {multiplication: $x * $y}\n5 * 3",
       "shouldContain": "multiplication: 5 * 3"
+    },
+    {
+      "id": 48,
+      "name": "Eval with division and decimals",
+      "code": "pattern {div $a $b} {quotient: $eval{return $a / $b}}\ndiv 7 2",
+      "shouldContain": "quotient: 3.5"
+    },
+    {
+      "id": 49,
+      "name": "Negative numbers in $eval",
+      "code": "pattern {calc $a $b} {result: $eval{return $a - $b}}\ncalc -5 -10",
+      "shouldContain": "result: 5"
+    },
+    {
+      "id": 50,
+      "name": "Tabs as flexible whitespace",
+      "code": "pattern {from$$to} {path: from -> to}\nfrom\tto",
+      "shouldContain": "path: from -> to"
+    },
+    {
+      "id": 51,
+      "name": "Unicode characters in variables",
+      "code": "pattern {greet $name} {Olá $name}\ngreet 世界",
+      "shouldContain": "Olá 世界"
+    },
+    {
+      "id": 52,
+      "name": "Emoji support",
+      "code": "pattern {say $emoji} {You said: $emoji}\nsay 😊",
+      "shouldContain": "You said: 😊"
+    },
+    {
+      "id": 53,
+      "name": "Trim multiple surrounding spaces",
+      "code": "pattern {$$$word$$} {FOUND: $word}\n   word    ",
+      "shouldContain": "FOUND: word"
+    },
+    {
+      "id": 54,
+      "name": "No match leaves input intact",
+      "code": "pattern {nomatch $x} {X}\nnothing matches here",
+      "shouldContain": "nothing matches here"
+    },
+    {
+      "id": 55,
+      "name": "Block captures first simple angle block(known issue)",
+      "code": "pattern {$block txt {<}{>}} {CAP[$txt]}\nstart <one> middle <two> end",
+      "shouldContain": "CAP[one]"
+    },
+    {
+      "id": 56,
+      "name": "Overlapping patterns cascade",
+      "code": "pattern {a} {A}\npattern {A} {B}\na",
+      "shouldContain": "B"
+    },
+    {
+      "id": 57,
+      "name": "Literal dollar in replacement",
+      "code": "pattern {price} {Price: $50}\nprice",
+      "shouldContain": "Price: $50"
+    },
+    {
+      "id": 58,
+      "name": "Dot in variable suffix(known issue)",
+      "code": "pattern {$file.ext} {file: $file}\nphoto.png",
+      "shouldContain": "file: photo"
+    },
+    {
+      "id": 59,
+      "name": "Repeated global replacements",
+      "code": "pattern {x} {X}\nxxxxx",
+      "shouldContain": "XXXXX"
+    },
+    {
+      "id": 60,
+      "name": "Context preserves inner pattern output",
+      "code": "context {\npattern {$x} {<$x>}\ninner\n}\ninner\nouter",
+      "shouldContain": "<inner>"
+    },
+    {
+      "id": 61,
+      "name": "Block with pipe delimiters(known issue)",
+      "code": "pattern {$block mid {|}{|}} {PIPE[$mid]}\n|a| and |b|",
+      "shouldContain": "PIPE[a]"
+    },
+    {
+      "id": 62,
+      "name": "Trailing comma punctuation handling",
+      "code": "pattern {$w,} {$w!}\nhello,",
+      "shouldContain": "hello!"
+    },
+    {
+      "id": 63,
+      "name": "Comma-separated two variables",
+      "code": "pattern {$a,$b} {[$a][$b]}\none,two",
+      "shouldContain": "[one][two]"
+    },
+    {
+      "id": 64,
+      "name": "Apostrophe in pattern literal(known issue)",
+      "code": "pattern {It's $name} {Hello $name}\nIt's John",
+      "shouldContain": "Hello John"
+    },
+    {
+      "id": 65,
+      "name": "Arithmetic increment with large number",
+      "code": "pattern {num $a} {$eval{return parseInt($a) + 1}}\nnum 999",
+      "shouldContain": "1000"
+    },
+    {
+      "id": 66,
+      "name": "Parentheses block capture with nesting",
+      "code": "pattern {$block txt {(}{)}} {B[$txt]}\n(a(b)c)",
+      "shouldContain": "B[a(b)c]"
+    },
+    {
+      "id": 67,
+      "name": "Literal special regex characters in pattern",
+      "code": "pattern {a.*b} {PAT}\na.*b",
+      "shouldContain": "PAT"
     }
   ]
 }

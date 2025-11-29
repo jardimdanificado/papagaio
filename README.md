@@ -1,6 +1,6 @@
 # Papagaio
 
-Minimal yet powerful text preprocessor. ~300LOC.
+Minimal yet powerful text preprocessor.
 
 ## Installation
 
