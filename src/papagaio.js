@@ -92,21 +92,37 @@ export class Papagaio {
       if (pattern.startsWith(S + 'block', i)) {
         let j = i + S.length + 'block'.length;
         while (j < pattern.length && /\s/.test(pattern[j])) j++;
-        let openDelim = this.open;
-        if (j < pattern.length && pattern[j] === this.open) {
-          const [c, e] = this.#extractBlock(pattern, j);
-          openDelim = c.trim() || this.open;
-          j = e;
-          while (j < pattern.length && /\s/.test(pattern[j])) j++;
+        
+        // Extrair nome como identificador simples
+        let varName = '';
+        while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) {
+          varName += pattern[j++];
         }
-        let closeDelim = this.close;
-        if (j < pattern.length && pattern[j] === this.open) {
-          const [c, e] = this.#extractBlock(pattern, j);
-          closeDelim = c.trim() || this.close;
+        
+        if (varName) {
+          while (j < pattern.length && /\s/.test(pattern[j])) j++;
+          
+          // Extrair delimitador de abertura
+          let openDelim = this.open;
+          if (j < pattern.length && pattern[j] === this.open) {
+            const [c, e] = this.#extractBlock(pattern, j);
+            openDelim = c.trim() || this.open;
+            j = e;
+            while (j < pattern.length && /\s/.test(pattern[j])) j++;
+          }
+          
+          // Extrair delimitador de fechamento
+          let closeDelim = this.close;
+          if (j < pattern.length && pattern[j] === this.open) {
+            const [c, e] = this.#extractBlock(pattern, j);
+            closeDelim = c.trim() || this.close;
+            j = e;
+          }
+          
           const eoMask = this.#escapeRegex(openDelim);
           const ecMask = this.#escapeRegex(closeDelim);
           regex += `${eoMask}([\\s\\S]*?)${ecMask}`;
-          i = e;
+          i = j;
           continue;
         }
       }
@@ -135,31 +151,48 @@ export class Papagaio {
   }
 
   #extractVarNames(pattern) {
-    const vars = [], seen = new Set(), S = this.sigil;
+    const vars = [], seen = new Set(), S = this.sigil, S2 = S + S;
     let i = 0;
     while (i < pattern.length) {
       if (pattern.startsWith(S + 'block', i)) {
         let j = i + S.length + 'block'.length;
         while (j < pattern.length && /\s/.test(pattern[j])) j++;
-        if (j < pattern.length && pattern[j] === this.open) {
-          const [nc, ne] = this.#extractBlock(pattern, j);
-          const varName = nc.trim();
-          if (varName && !seen.has(varName)) {
-            vars.push(S + varName);
-            seen.add(varName);
-          }
-          j = ne;
+        
+        // Extrair nome como identificador simples
+        let varName = '';
+        while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) {
+          varName += pattern[j++];
+        }
+        
+        if (varName && !seen.has(varName)) {
+          vars.push(S + varName);
+          seen.add(varName);
+        }
+        
+        if (varName) {
           while (j < pattern.length && /\s/.test(pattern[j])) j++;
+          
+          // Pular delimitador de abertura
           if (j < pattern.length && pattern[j] === this.open) {
-            j = this.#extractBlock(pattern, j)[1];
+            const [, ne] = this.#extractBlock(pattern, j);
+            j = ne;
             while (j < pattern.length && /\s/.test(pattern[j])) j++;
           }
+          
+          // Pular delimitador de fechamento
           if (j < pattern.length && pattern[j] === this.open) {
-            j = this.#extractBlock(pattern, j)[1];
+            const [, ne] = this.#extractBlock(pattern, j);
+            j = ne;
           }
-          i = j;
-          continue;
         }
+        
+        i = j;
+        continue;
+      }
+      // FIX: Checar por $ primeiro (espaço flexível)
+      if (pattern.startsWith(S2, i)) {
+        i += S2.length;
+        continue;
       }
       if (pattern.startsWith(S, i)) {
         let j = i + S.length, varName = '';
@@ -202,54 +235,48 @@ export class Papagaio {
   #applyPatterns(src, patterns) {
     let clearFlag = false, lastResult = "", S = this.sigil;
     for (const pat of patterns) {
-      let changed = true, it = 0;
-      while (changed && it < this.maxRecursion) {
-        changed = false;
-        it++;
-        const regex = this.#patternToRegex(pat.match);
-        const varNames = this.#extractVarNames(pat.match);
-        src = src.replace(regex, (...args) => {
-          changed = true;
-          const fullMatch = args[0];
-          const captures = args.slice(1, -2);
-          const matchStart = args[args.length - 2];
-          const matchEnd = matchStart + fullMatch.length;
-          let result = pat.replace;
-          const varMap = {};
-          for (let i = 0; i < varNames.length; i++)
-            varMap[varNames[i]] = captures[i] || '';
-          for (const [k, v] of Object.entries(varMap)) {
-            const keyEsc = this.#escapeRegex(k);
-            result = result.replace(new RegExp(keyEsc + '(?![A-Za-z0-9_])', 'g'), v);
-          }
-          result = result.replace(new RegExp(`${this.#escapeRegex(S)}unique\\b`, 'g'), 
-            () => this.#genUnique());
-          result = result.replace(/\$eval\{([^}]*)\}/g, (_, code) => {
-            try {
-              const wrapped = `"use strict"; return (function() { ${code} })();`;
-              return String(Function("papagaio", "ctx", wrapped)(this, {}));
-            } catch {
-              return "";
-            }
-          });
-          const S2 = S + S;
-          result = result.replace(new RegExp(this.#escapeRegex(S2), 'g'), '');
-          if (new RegExp(`${this.#escapeRegex(S)}clear\\b`, 'g').test(result)) {
-            result = result.replace(new RegExp(`${this.#escapeRegex(S)}clear\\b`, 'g'), '');
-            clearFlag = true;
-          }
-          result = result
-            .replace(new RegExp(`${this.#escapeRegex(S)}prefix\\b`, 'g'), src.slice(0, matchStart))
-            .replace(new RegExp(`${this.#escapeRegex(S)}suffix\\b`, 'g'), src.slice(matchEnd))
-            .replace(new RegExp(`${this.#escapeRegex(S)}match\\b`, 'g'), fullMatch);
-          lastResult = result;
-          return result;
-        });
-        if (clearFlag) {
-          src = lastResult;
-          clearFlag = false;
-          changed = true;
+      // Aplicar uma única vez
+      const regex = this.#patternToRegex(pat.match);
+      const varNames = this.#extractVarNames(pat.match);
+      src = src.replace(regex, (...args) => {
+        const fullMatch = args[0];
+        const captures = args.slice(1, -2);
+        const matchStart = args[args.length - 2];
+        const matchEnd = matchStart + fullMatch.length;
+        let result = pat.replace;
+        const varMap = {};
+        for (let i = 0; i < varNames.length; i++)
+          varMap[varNames[i]] = captures[i] || '';
+        for (const [k, v] of Object.entries(varMap)) {
+          const keyEsc = this.#escapeRegex(k);
+          result = result.replace(new RegExp(keyEsc + '(?![A-Za-z0-9_])', 'g'), v);
         }
+        result = result.replace(new RegExp(`${this.#escapeRegex(S)}unique\\b`, 'g'), 
+          () => this.#genUnique());
+        result = result.replace(/\$eval\{([^}]*)\}/g, (_, code) => {
+          try {
+            const wrapped = `"use strict"; return (function() { ${code} })();`;
+            return String(Function("papagaio", "ctx", wrapped)(this, {}));
+          } catch {
+            return "";
+          }
+        });
+        const S2 = S + S;
+        result = result.replace(new RegExp(this.#escapeRegex(S2), 'g'), '');
+        if (new RegExp(`${this.#escapeRegex(S)}clear\\b`, 'g').test(result)) {
+          result = result.replace(new RegExp(`${this.#escapeRegex(S)}clear\\b`, 'g'), '');
+          clearFlag = true;
+        }
+        result = result
+          .replace(new RegExp(`${this.#escapeRegex(S)}prefix\\b`, 'g'), src.slice(0, matchStart))
+          .replace(new RegExp(`${this.#escapeRegex(S)}suffix\\b`, 'g'), src.slice(matchEnd))
+          .replace(new RegExp(`${this.#escapeRegex(S)}match\\b`, 'g'), fullMatch);
+        lastResult = result;
+        return result;
+      });
+      if (clearFlag) {
+        src = lastResult;
+        clearFlag = false;
       }
     }
     return src;

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-import { Papagaio } from "./papagaio.js";
+import { Papagaio } from "../src/papagaio.js";
 import fs from "fs";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const pkg = require("./package.json");
+const pkg = require("../package.json");
 
 
 // Help & Version

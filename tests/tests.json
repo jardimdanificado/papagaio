@@ -1,0 +1,286 @@
+{
+  "tests": [
+    {
+      "id": 1,
+      "name": "Basic pattern with 3 variables",
+      "code": "pattern {$x $y $z} {$z, $y, $x}\napple banana cherry",
+      "shouldContain": "cherry, banana, apple"
+    },
+    {
+      "id": 2,
+      "name": "Flexible whitespace ($)",
+      "code": "pattern {$x$$and$$$y} {$x & $y}\nhello   and   world",
+      "shouldContain": "hello & world"
+    },
+    {
+      "id": 3,
+      "name": "Block with delimiters ( )",
+      "code": "pattern {$block content {(}{)}} {[$content]}\ndata (hello world)",
+      "shouldContain": "[hello world]"
+    },
+    {
+      "id": 4,
+      "name": "Multiple patterns - reorder",
+      "code": "pattern {$a $b} {$b:$a}\nfoo bar",
+      "shouldContain": "bar:foo"
+    },
+    {
+      "id": 5,
+      "name": "Unique IDs incremental",
+      "code": "pattern {item} {item#$unique}\nitem\nitem\nitem",
+      "shouldContain": "item#u0"
+    },
+    {
+      "id": 6,
+      "name": "Block with brackets [ ]",
+      "code": "pattern {$block arr {[}{]}} {ARRAY($arr)}\n[1, 2, 3]",
+      "shouldContain": "ARRAY(1, 2, 3)"
+    },
+    {
+      "id": 7,
+      "name": "Pattern with special characters",
+      "code": "pattern {$a + $b} {$a PLUS $b}\n5 + 3",
+      "shouldContain": "5 PLUS 3"
+    },
+    {
+      "id": 8,
+      "name": "Match with prefix and suffix",
+      "code": "pattern {Hello $name} {>> $name <<}\nHello Alice",
+      "shouldContain": ">> Alice <<"
+    },
+    {
+      "id": 9,
+      "name": "Pattern repetition (global)",
+      "code": "pattern {x} {X}\nx y x z x",
+      "shouldContain": "X y X z X"
+    },
+    {
+      "id": 10,
+      "name": "Block with parentheses ( )",
+      "code": "pattern {$block params {(}{)}} {FUNC[$params]}\ncalcular(a, b, c)",
+      "shouldContain": "FUNC[a, b, c]"
+    },
+    {
+      "id": 11,
+      "name": "Pattern with $eval - arithmetic operation",
+      "code": "pattern {sum $a $b} {result: $eval{return $a + $b}}\nsum 10 20",
+      "shouldContain": "result: 30"
+    },
+    {
+      "id": 12,
+      "name": "Nested block with multiple levels",
+      "code": "pattern {$block inner {<}{>}} {INNER{$inner}}\nouter <inner content here>",
+      "shouldContain": "INNER{inner content here}"
+    },
+    {
+      "id": 13,
+      "name": "Pattern with flexible whitespace in middle",
+      "code": "pattern {from$$to} {path: from -> to}\nfrom     to\nfrom  to\nfrom to",
+      "shouldContain": "path: from -> to"
+    },
+    {
+      "id": 14,
+      "name": "Multiple $unique in one pattern",
+      "code": "pattern {log $msg} {[$unique] LOG: $msg [$unique]}\nlog error\nlog warning",
+      "shouldContain": "[u0] LOG: error"
+    },
+    {
+      "id": 15,
+      "name": "Block with quotes as delimiter",
+      "code": "pattern {$block str {\"}{\"}} {STRING: $str}\n\"hello world\"",
+      "shouldContain": "STRING: hello world"
+    },
+    {
+      "id": 16,
+      "name": "Pattern with 4+ variables",
+      "code": "pattern {$a $b $c $d $e} {$e-$d-$c-$b-$a}\n1 2 3 4 5",
+      "shouldContain": "5-4-3-2-1"
+    },
+    {
+      "id": 17,
+      "name": "Block with empty delimiter (special)",
+      "code": "pattern {start $a middle $b end} {($a|$b)}\nstart foo middle bar end",
+      "shouldContain": "(foo|bar)"
+    },
+    {
+      "id": 18,
+      "name": "Pattern generates HTML",
+      "code": "pattern {$tag $content} {<$tag>$content</$tag>}\ndiv Hello World",
+      "shouldContain": "<div>Hello World</div>"
+    },
+    {
+      "id": 19,
+      "name": "Block with numeric delimiters",
+      "code": "pattern {$block data {<<}{>>}} {DATA[$data]}\n<<json: {x: 1}>>",
+      "shouldContain": "DATA[json: {x: 1}]"
+    },
+    {
+      "id": 20,
+      "name": "Multiple sequential patterns complex",
+      "code": "pattern {Mr. $name} {Senhor $name}\npattern {Senhor $n} {Sir $n (formal)}\nMr. Smith",
+      "shouldContain": "Sir Smith"
+    },
+    {
+      "id": 21,
+      "name": "Block with operator symbol",
+      "code": "pattern {$block op {**}{**}} {OPERATION: $op}\n**a + b + c**",
+      "shouldContain": "OPERATION: a + b + c"
+    },
+    {
+      "id": 22,
+      "name": "Flexible whitespace with semicolon",
+      "code": "pattern {$a$;$b} {$a AND $b}\nx ; y\nx; y\nx  ;  y",
+      "shouldContain": "x AND y"
+    },
+    {
+      "id": 23,
+      "name": "Context with nested pattern",
+      "code": "context {\npattern {$x} {<$x>}\napple\nbanana\ncherry\n}",
+      "shouldContain": "<apple>"
+    },
+    {
+      "id": 24,
+      "name": "Markdown bold to HTML",
+      "code": "pattern {**$text**} {<strong>$text</strong>}\nThis is **important** text",
+      "shouldContain": "<strong>important</strong>"
+    },
+    {
+      "id": 25,
+      "name": "Markdown italic to HTML",
+      "code": "pattern {*$text*} {<em>$text</em>}\nThis is *italic* text",
+      "shouldContain": "<em>italic</em>"
+    },
+    {
+      "id": 26,
+      "name": "Configuration key=value",
+      "code": "pattern {$key = $value} {const $key = '$value';}\nserver_host = localhost\ndb_port = 3000",
+      "shouldContain": "const server_host = 'localhost';"
+    },
+    {
+      "id": 27,
+      "name": "Full name transformation",
+      "code": "pattern {$first $last} {{ name: '$last, $first' }}\nJohn Doe",
+      "shouldContain": "{ name: 'Doe, John' }"
+    },
+    {
+      "id": 28,
+      "name": "CSV to JSON simple",
+      "code": "pattern {$a,$b,$c} {{ field1: '$a', field2: '$b', field3: '$c' }}\nAlice,30,Engineer",
+      "shouldContain": "{ field1: 'Alice', field2: '30', field3: 'Engineer' }"
+    },
+    {
+      "id": 29,
+      "name": "Pattern with dictionary",
+      "code": "pattern {$a and $b} {$b and $a}\ncats and dogs",
+      "shouldContain": "dogs and cats"
+    },
+    {
+      "id": 30,
+      "name": "Multiple patterns in cascade",
+      "code": "pattern {a} {b}\npattern {b} {c}\npattern {c} {d}\na",
+      "shouldContain": "d"
+    },
+    {
+      "id": 31,
+      "name": "Block with empty delimiter (default)",
+      "code": "pattern {$block data {}{}} {DATA:$data}\ndata { hello world }",
+      "shouldContain": "DATA:hello world"
+    },
+    {
+      "id": 32,
+      "name": "Pattern with special character dot",
+      "code": "pattern {$x.txt} {file: $x}\ndocument.txt",
+      "shouldContain": "file: document"
+    },
+    {
+      "id": 33,
+      "name": "Block captures multiple nested levels",
+      "code": "pattern {$block inner {<}{>}} {INNER{$inner}}\nouter <middle <deep> more>",
+      "shouldContain": "INNER{middle <deep> more}"
+    },
+    {
+      "id": 34,
+      "name": "Pattern with numbers and special chars",
+      "code": "pattern {$x + $y = $z} {$z is sum of $x and $y}\n5 + 3 = 8",
+      "shouldContain": "8 is sum of 5 and 3"
+    },
+    {
+      "id": 35,
+      "name": "Empty context is removed",
+      "code": "Start\ncontext {\n  \n}\nEnd",
+      "shouldContain": "Start"
+    },
+    {
+      "id": 36,
+      "name": "Pattern HTML generator function",
+      "code": "pattern {$tag $content} {<$tag>$content</$tag>}\ndiv HelloWorld",
+      "shouldContain": "<div>HelloWorld</div>"
+    },
+    {
+      "id": 37,
+      "name": "Block with multi-char delimiter",
+      "code": "pattern {$block code {<<}{>>}} {CODE[$code]}\n<<console.log('test')>>",
+      "shouldContain": "CODE[console.log('test')]"
+    },
+    {
+      "id": 38,
+      "name": "Markdown list to HTML",
+      "code": "pattern {- $item} {<li>$item</li>}\n- Apple\n- Banana",
+      "shouldContain": "<li>Apple</li>"
+    },
+    {
+      "id": 39,
+      "name": "Pattern with literal $ ($)",
+      "code": "pattern {price} {Price: $50}\nprice",
+      "shouldContain": "Price: $50"
+    },
+    {
+      "id": 40,
+      "name": "Markdown heading h1",
+      "code": "pattern {# $title} {<h1>$title</h1>}\n# Welcome",
+      "shouldContain": "<h1>Welcome</h1>"
+    },
+    {
+      "id": 41,
+      "name": "Markdown heading h2",
+      "code": "pattern {## $title} {<h2>$title</h2>}\n## Section",
+      "shouldContain": "<h2>Section</h2>"
+    },
+    {
+      "id": 42,
+      "name": "Variables with underscore names",
+      "code": "pattern {$var_name $other_var} {$other_var:$var_name}\nfirst second",
+      "shouldContain": "second:first"
+    },
+    {
+      "id": 43,
+      "name": "Pattern with variable reuse",
+      "code": "pattern {$x} {$x-$x-$x}\ndata",
+      "shouldContain": "data-data-data"
+    },
+    {
+      "id": 44,
+      "name": "Block with double quotes",
+      "code": "pattern {$block str {\\\"}{\\\"}} {STR[$str]}\n\\\"hello\\\"",
+      "shouldContain": "STR[hello]"
+    },
+    {
+      "id": 45,
+      "name": "Pattern with flexible space before and after",
+      "code": "pattern {$$hello$$} {FOUND}\n   hello   ",
+      "shouldContain": "FOUND"
+    },
+    {
+      "id": 46,
+      "name": "Multiple blocks in one pattern",
+      "code": "pattern {$block a {(}{)}, $block b {[}{]}} {PAIR: $a and $b}\n(first), [second]",
+      "shouldContain": "PAIR: first and second"
+    },
+    {
+      "id": 47,
+      "name": "Pattern with math symbols",
+      "code": "pattern {$x * $y} {multiplication: $x * $y}\n5 * 3",
+      "shouldContain": "multiplication: 5 * 3"
+    }
+  ]
+}

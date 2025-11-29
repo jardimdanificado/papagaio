@@ -2,8 +2,11 @@
   "name": "papagaio",
   "version": "0.2.1",
   "description": "easy yet powerful preprocessor",
-  "main": "papagaio.js",
+  "main": "src/papagaio.js",
   "type": "module",
+  "scripts": {
+    "test": "node tests/test.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jardimdanificado/papagaio.git"
@@ -19,9 +22,8 @@
   "bugs": {
     "url": "https://github.com/jardimdanificado/papagaio/issues"
   },
-  "homepage": "https://github.com/jardimdanificado/papagaio#readme"
-,
+  "homepage": "https://github.com/jardimdanificado/papagaio#readme",
   "bin": {
-    "papagaio": "./cli.js"
+    "papagaio": "./bin/cli.js"
   }
 }
