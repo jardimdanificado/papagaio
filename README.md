@@ -287,16 +287,16 @@ Output:
 
 ## Known Bugs
 
-- Multi-character delimiters that contains double quotes doesnt match properly.
+- Multi-character block delimiters that contains double quotes doesnt match properly.
 
 ---
 
 ## Syntax Reference
 
 ```
-pattern {$x $y} {$y, $x}              # basic pattern
-pattern {$x$$y} {$x-$y}               # flexible whitespace
-pattern {$block n {o}{c}} {$n}        # block
+pattern {$x $y} {$y, $x}               # basic pattern
+pattern {$x$$y} {$x-$y}                # flexible whitespace
+pattern {$block n {o}{c}} {$n}         # block
 context { ... }                        # recursive scope
 $unique                                # unique ID
 $match                                 # full match

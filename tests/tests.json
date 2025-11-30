@@ -404,12 +404,12 @@
     },
     {
       "id": 68,
-      "name": "Block with double quotes complex delimiters(known issue)",
+      "name": "Block with multi-character delimiters containing double quotes(known issue)",
       "code": "pattern {$block str {\"k}{\"k}} {STR[$str]}\n\"khello\"k",
       "shouldContain": "STR[hello]"
     },
     {
-      "id": 68,
+      "id": 69,
       "name": "Block with multi-character delimiters",
       "code": "pattern {$block str {open}{close}} {$str World!}\nopenHelloclose",
       "shouldContain": "Hello World!"
