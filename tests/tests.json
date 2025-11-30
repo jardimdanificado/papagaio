@@ -261,7 +261,7 @@
     {
       "id": 44,
       "name": "Block with double quotes",
-      "code": "pattern {$block str {\\\"}{\\\"}} {STR[$str]}\n\\\"hello\\\"",
+      "code": "pattern {$block str {\"}{\"}} {STR[$str]}\n\"hello\"",
       "shouldContain": "STR[hello]"
     },
     {
@@ -326,7 +326,7 @@
     },
     {
       "id": 55,
-      "name": "Block captures first simple angle block(known issue)",
+      "name": "Block captures first simple angle block",
       "code": "pattern {$block txt {<}{>}} {CAP[$txt]}\nstart <one> middle <two> end",
       "shouldContain": "CAP[one]"
     },
@@ -344,8 +344,8 @@
     },
     {
       "id": 58,
-      "name": "Dot in variable suffix(known issue)",
-      "code": "pattern {$file.ext} {file: $file}\nphoto.png",
+      "name": "Simple Test",
+      "code": "pattern {$file.$ext} {file: $file}\nphoto.png",
       "shouldContain": "file: photo"
     },
     {
@@ -362,7 +362,7 @@
     },
     {
       "id": 61,
-      "name": "Block with pipe delimiters(known issue)",
+      "name": "Block with pipe delimiters",
       "code": "pattern {$block mid {|}{|}} {PIPE[$mid]}\n|a| and |b|",
       "shouldContain": "PIPE[a]"
     },
@@ -380,7 +380,7 @@
     },
     {
       "id": 64,
-      "name": "Apostrophe in pattern literal(known issue)",
+      "name": "Apostrophe in pattern literal",
       "code": "pattern {It's $name} {Hello $name}\nIt's John",
       "shouldContain": "Hello John"
     },
@@ -401,6 +401,18 @@
       "name": "Literal special regex characters in pattern",
       "code": "pattern {a.*b} {PAT}\na.*b",
       "shouldContain": "PAT"
+    },
+    {
+      "id": 68,
+      "name": "Block with double quotes complex delimiters(known issue)",
+      "code": "pattern {$block str {\"k}{\"k}} {STR[$str]}\n\"khello\"k",
+      "shouldContain": "STR[hello]"
+    },
+    {
+      "id": 68,
+      "name": "Block with multi-character delimiters",
+      "code": "pattern {$block str {open}{close}} {$str World!}\nopenHelloclose",
+      "shouldContain": "Hello World!"
     }
   ]
 }

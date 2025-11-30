@@ -52,17 +52,6 @@ Output: `hello & world` (both)
 
 `$$` = zero or more spaces/tabs/newlines.
 
-### 4. Literal Output (`$$`)
-
-```
-Price: $$50
-```
-Output: `Price: $50`
-
-Use `$$` for literal `$` output.
-
----
-
 ## Blocks
 
 Capture content between delimiters.
@@ -281,6 +270,9 @@ Output:
 - Reuse: `$x` appears multiple times in replace
 - Undefined: becomes empty string
 
+### Sigil
+- You cannot match words containing the sigil character.
+
 ---
 
 ## Troubleshooting
@@ -293,14 +285,9 @@ Output:
 | Infinite recursion | Use `$clear` or reduce `maxRecursion` |
 | $eval not working | Errors return empty string, use try-catch |
 
----
+## Known Bugs
 
-## Performance
-
-- Simple patterns > complex patterns
-- Blocks have minor overhead
-- Avoid unlimited recursion
-- For large inputs, use multiple contexts
+- Multi-character delimiters that contains double quotes doesnt match properly.
 
 ---
 
@@ -311,7 +298,6 @@ pattern {$x $y} {$y, $x}              # basic pattern
 pattern {$x$$y} {$x-$y}               # flexible whitespace
 pattern {$block n {o}{c}} {$n}        # block
 context { ... }                        # recursive scope
-$$literal                              # output literal $
 $unique                                # unique ID
 $match                                 # full match
 $prefix / $suffix                      # before/after
@@ -327,7 +313,6 @@ $eval{code}                            # execute JS
 context {
   # Markdown headers
   pattern {# $title} {<h1>$title</h1>}
-  pattern {## $title} {<h2>$title</h2>}
   
   # Lists
   pattern {- $item} {<li>$item</li>}
@@ -338,7 +323,7 @@ context {
   
   # Process content
   # Welcome
-  ## Getting Started
+  # Getting Started
   This is **important** and *italic*
   - First item
   - Second item
