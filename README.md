@@ -141,7 +141,7 @@ Output:
 ## Special Keywords
 
 ### $unique
-Generate unique incremental IDs.
+Generate unique incremental IDs for each pattern call.
 
 ```
 pattern {item} {item_$unique}
