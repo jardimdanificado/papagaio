@@ -46,17 +46,6 @@ apple banana cherry
 ```
 Output: `cherry, banana, apple`
 
-### 3. Flexible Whitespace (`$$`)
-
-```
-pattern {$x$$and$$$y} {$x & $y}
-hello   and   world
-hello and world
-```
-Output: `hello & world` (both)
-
-`$$` = zero or more spaces/tabs/newlines.
-
 ## Blocks
 
 Capture content between delimiters.
@@ -266,9 +255,13 @@ Output:
 
 ### Matching
 - Variables (`$x`) capture **one word** (no spaces)
-- `$$` = flexible whitespace (0+ spaces/tabs/newlines)
+- Variables (`$$x`) captures one or more words (with spaces)
 - Patterns apply **globally** each iteration
 - Auto-recursion until: max 512 iterations OR no changes
+- `$ `  = one or more of this whitespace (spaces, tabs, newlines)
+- `$$ ` = zero or more of this whitespace (spaces, tabs, newlines)
+- `$$$ `= one or more whitespaces
+- `$$$$ `= zero or more whitespaces
 
 ### Block Matching
 - `$block name {open}{close}` captures between delimiters
@@ -280,8 +273,11 @@ Output:
 - Reuse: `$x` appears multiple times in replace
 - Undefined: becomes empty string
 
-### Sigil
-- You cannot match words containing the sigil character.
+### Limitations
+- You cannot match words containing the current sigil character.
+- You cannot match a $block{}{} using the current delimiters.
+- By design, whitespace operators need a whitespace after them to work properly, even the `$$$ ` and `$$$$ ` ones.
+- Multiple word variables (`$$x`) also captures leading/trailing whitespaces, so be careful when using them together with whitespace operators.
 
 ---
 
@@ -289,11 +285,13 @@ Output:
 
 | Problem | Solution |
 |---------|----------|
-| Pattern doesn't match | Use `$$` between elements for flexible whitespace |
 | Variable not captured | Check space between variables |
 | Block not working | Verify balanced delimiters `{` `}` |
 | Infinite recursion | Use `$clear` or reduce `recursion_limit` |
 | $eval not working | Errors return empty string, use try-catch |
+| Pattern doesn't match | Use whitespace operators between elements for flexible whitespace |
+| Whitespace operators | Remember they need a whitespace after them to work properly |
+| Whitespace operators not matching | Multiple word variables (`$$x`) also captures leading/trailing whitespaces, so be careful when using them together with whitespace operators. |
 
 ## Known Bugs
 
@@ -305,7 +303,7 @@ Output:
 
 ```
 pattern {$x $y} {$y, $x}               # basic pattern
-pattern {$x$$y} {$x-$y}                # flexible whitespace
+pattern {$x$ $y} {$x-$y}               # flexible whitespace
 pattern {$block n {o}{c}} {$n}         # block
 context { ... }                        # recursive scope
 $unique                                # unique ID per pattern
@@ -313,6 +311,7 @@ $match                                 # full match
 $prefix / $suffix                      # before/after
 $clear                                 # clear before
 $eval{code}                            # execute JS
+$ / $$ / $$$ / $$$$                    # whitespace operators
 ```
 
 ---

@@ -9,7 +9,7 @@
     {
       "id": 2,
       "name": "Flexible whitespace ($)",
-      "code": "pattern {$x and $y} {$x & $y}\nhello   and   world",
+      "code": "pattern {$$x and $$y} {$x & $y}\nhello   and   world",
       "expected": "hello & world"
     },
     {
@@ -129,7 +129,7 @@
     {
       "id": 22,
       "name": "Flexible whitespace with semicolon",
-      "code": "pattern {$$$a$$;$$$b$$} {$a AND $b}\nx ; y\nx; y\nx  ;  y",
+      "code": "pattern {$$a;$$b} {$a AND $b}\nx ; y\nx; y\nx  ;  y",
       "expected": "x AND y"
     },
     {
@@ -182,8 +182,8 @@
     },
     {
       "id": 31,
-      "name": "Block with empty delimiter (default)",
-      "code": "pattern {$block data {}{}} {DATA:$data}\ndata { hello world }",
+      "name": "Delimiter test",
+      "code": "pattern {$block data {[}{]}} {DATA:$data}\ndata [ hello world ]",
       "expected": "DATA: hello world"
     },
     {
@@ -267,7 +267,7 @@
     {
       "id": 45,
       "name": "Pattern with flexible space before and after",
-      "code": "pattern {$$hello$$} {FOUND}\n   hello   ",
+      "code": "pattern {$$ hello$$ } {FOUND}\n   hello   ",
       "expected": "FOUND"
     },
     {
@@ -315,7 +315,7 @@
     {
       "id": 53,
       "name": "Trim multiple surrounding spaces",
-      "code": "pattern {$$$word$$} {FOUND: $word}\n   word    ",
+      "code": "pattern {$ $word$ } {FOUND: $word}\n   word    ",
       "expected": "FOUND: word"
     },
     {
@@ -543,7 +543,7 @@
     {
       "id": 91,
       "name": "CSV to JSON",
-      "code": "pattern {$$a,$$b,$$c} {{ id: '$a', name: '$b', role: '$c' }}\n1,Alice,Engineer\n2,Bob,Designer",
+      "code": "pattern {$a,$$b,$$c} {{ id: '$a', name: '$b', role: '$c' }}\n1,Alice,Engineer\n2,Bob,Designer",
       "expected": "{ id: '1', name: 'Alice', role: 'Engineer' }\n{ id: '2', name: 'Bob', role: 'Designer' }"
     },
     {
@@ -693,7 +693,7 @@
     {
       "id": 116,
       "name": "Multiple spaces trim with flexible whitespace",
-      "code": "pattern {$$$word$$} {FOUND: $word}\n   word    ",
+      "code": "pattern {$ $word$ } {FOUND: $word}\n   word    ",
       "expected": "FOUND: word"
     },
     {
