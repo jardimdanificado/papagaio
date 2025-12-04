@@ -179,11 +179,22 @@ function matchPattern(papagaio, src, tokens, startPos = 0) {
     if (token.type === 'var') {
       let v = '';
       const nextToken = findNextSignificantToken(tokens, ti);
-      if (nextToken && nextToken.type === 'literal') {
-        while (pos < src.length && !src.startsWith(nextToken.value, pos) && !/\s/.test(src[pos])) v += src[pos++];
+      
+      // Se o próximo token é um block, captura até o delimitador de abertura
+      if (nextToken && nextToken.type === 'block') {
+        while (pos < src.length && !src.startsWith(nextToken.openDelim, pos) && !/\s/.test(src[pos])) {
+          v += src[pos++];
+        }
+      } else if (nextToken && nextToken.type === 'literal') {
+        while (pos < src.length && !src.startsWith(nextToken.value, pos) && !/\s/.test(src[pos])) {
+          v += src[pos++];
+        }
       } else {
-        while (pos < src.length && !/\s/.test(src[pos])) v += src[pos++];
+        while (pos < src.length && !/\s/.test(src[pos])) {
+          v += src[pos++];
+        }
       }
+      
       if (token.wsTrailing && token.wsTrailing !== 'optional') {
         const { newPos } = matchWhitespaceType(src, pos, token.wsTrailing);
         pos = newPos;
@@ -199,12 +210,24 @@ function matchPattern(papagaio, src, tokens, startPos = 0) {
       while (pos < src.length && /\s/.test(src[pos])) pos++;
       const n = findNextSignificantToken(tokens, ti);
       let v = '';
-      if (!n || ['var', 'var-ws', 'block'].includes(n.type)) {
-        while (pos < src.length && !/\s/.test(src[pos])) v += src[pos++];
+      
+      // Se o próximo token é um block, captura até o delimitador de abertura
+      if (n && n.type === 'block') {
+        while (pos < src.length && !src.startsWith(n.openDelim, pos) && src[pos] !== '\n') {
+          v += src[pos++];
+        }
+        v = v.trimEnd();
+      } else if (!n || ['var', 'var-ws'].includes(n.type)) {
+        while (pos < src.length && !/\s/.test(src[pos])) {
+          v += src[pos++];
+        }
       } else if (n.type === 'literal') {
-        while (pos < src.length && !src.startsWith(n.value, pos) && src[pos] !== '\n') v += src[pos++];
+        while (pos < src.length && !src.startsWith(n.value, pos) && src[pos] !== '\n') {
+          v += src[pos++];
+        }
         v = v.trimEnd();
       }
+      
       if (token.wsTrailing && token.wsTrailing !== 'optional') {
         const { newPos } = matchWhitespaceType(src, pos, token.wsTrailing);
         pos = newPos;

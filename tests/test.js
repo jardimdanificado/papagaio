@@ -33,7 +33,7 @@ for (const test of tests) {
   
   try {
     const result = p.process(test.code).trim();
-    const success = result.includes(test.expected);
+    const success = result === test.expected.trim();
     
     if (success) {
       console.log(`${colors.green}[PASS]${colors.reset} [${test.id}] ${test.name}`);

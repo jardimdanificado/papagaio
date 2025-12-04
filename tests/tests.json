@@ -15,7 +15,7 @@
     {
       "id": 3,
       "name": "Block with delimiters ( )",
-      "code": "pattern {$block content {(}{)}} {[$content]}\ndata (hello world)",
+      "code": "pattern {$name $block content {(}{)}} {[$content]}\ndata (hello world)",
       "expected": "[hello world]"
     },
     {
@@ -57,7 +57,7 @@
     {
       "id": 10,
       "name": "Block with parentheses ( )",
-      "code": "pattern {$block params {(}{)}} {FUNC[$params]}\ncalcular(a, b, c)",
+      "code": "pattern {$nome$$ $block params {(}{)}} {FUNC[$params]}\ncalcular(a, b, c)",
       "expected": "FUNC[a, b, c]"
     },
     {
@@ -69,14 +69,14 @@
     {
       "id": 12,
       "name": "Nested block with multiple levels",
-      "code": "pattern {$block inner {<}{>}} {INNER{$inner}}\nouter <inner content here>",
+      "code": "pattern {$block inner {<}{>}} {INNER{$inner}}\n<inner content here>",
       "expected": "INNER{inner content here}"
     },
     {
       "id": 13,
       "name": "Pattern with flexible whitespace in middle",
       "code": "pattern {from to} {path: from -> to}\nfrom     to\nfrom  to\nfrom to",
-      "expected": "path: from -> to"
+      "expected": "path: from -> to\npath: from -> to\npath: from -> to"
     },
     {
       "id": 14,
@@ -135,7 +135,7 @@
     {
       "id": 23,
       "name": "Context with nested pattern",
-      "code": "context {\npattern {$x} {<$x>}\napple\nbanana\ncherry\n}",
+      "code": "context {pattern {$x} {<$x>} apple banana cherry}",
       "expected": "<apple>"
     },
     {
