@@ -4,649 +4,44 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🦜 papagaio</title>
-    <style>
-        :root {
-            --bg-dark: #282828;
-            --bg: #3c3836;
-            --bg-light: #504945;
-            --fg: #ebdbb2;
-            --fg-dark: #a89984;
-            --green: #b8bb26;
-            --yellow: #fabd2f;
-            --blue: #83a598;
-            --red: #fb4934;
-            --orange: #fe8019;
-            --purple: #d3869b;
-            --aqua: #8ec07c;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
-            color: var(--fg); 
-            padding: 10px; 
-            min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-        
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                linear-gradient(45deg, 
-                    #C03F31 0%, #C03F31 25%, 
-                    #F9DC5C 25%, #F9DC5C 50%, 
-                    #2D936C 50%, #2D936C 75%, 
-                    #0A100D 75%, #0A100D 100%);
-            background-size: 400% 400%;
-            animation: reggaeBackground 20s ease infinite;
-            z-index: -1;
-        }
-        
-        @keyframes reggaeBackground {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: var(--bg);
-            border-radius: 8px;
-            overflow: hidden;
-            height: 95vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        
-        .header {
-            background: var(--bg-light);
-            padding: 12px 15px;
-            text-align: center;
-            position: relative;
-            border-bottom: 2px solid var(--yellow);
-            flex-shrink: 0;
-        }
-        
-        .header h1 {
-            font-size: 22px;
-            font-weight: bold;
-            margin: 0;
-        }
-        
-        .main-controls {
-            display: flex;
-            gap: 8px;
-            padding: 10px;
-            background: var(--bg-light);
-            border-bottom: 1px solid var(--bg);
-            justify-content: center;
-            flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-        
-        button {
-            padding: 8px 12px;
-            background: var(--bg);
-            color: var(--fg);
-            border: 1px solid var(--bg-light);
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-        
-        button:hover {
-            background: var(--yellow);
-            color: var(--bg-dark);
-        }
-
-        button.active {
-            background: var(--blue);
-            color: var(--bg-dark);
-        }
-        
-        .content {
-            display: flex;
-            flex: 1;
-            gap: 12px;
-            padding: 12px;
-            overflow: hidden;
-            min-height: 0;
-        }
-
-        .sidebar {
-            width: 220px;
-            background: var(--bg-dark);
-            border-radius: 5px;
-            border: 1px solid var(--bg-light);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .sidebar h2 {
-            padding: 10px 12px;
-            background: var(--bg-light);
-            font-size: 13px;
-            text-align: center;
-            font-weight: 600;
-            border-bottom: 1px solid var(--bg);
-            flex-shrink: 0;
-        }
-
-        .sketches-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 6px;
-        }
-
-        .sketch-item {
-            padding: 8px;
-            background: var(--bg);
-            border: 1px solid var(--bg-light);
-            border-radius: 3px;
-            margin-bottom: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 12px;
-        }
-
-        .sketch-item:hover {
-            background: var(--bg-light);
-        }
-
-        .sketch-item.active {
-            background: var(--blue);
-            color: var(--bg-dark);
-            border-color: var(--blue);
-        }
-
-        .sketch-item-name {
-            font-weight: 600;
-            margin-bottom: 3px;
-        }
-
-        .sketch-item-date {
-            font-size: 10px;
-            opacity: 0.7;
-        }
-
-        .sidebar-controls {
-            padding: 6px;
-            border-top: 1px solid var(--bg-light);
-            display: flex;
-            gap: 3px;
-            flex-wrap: wrap;
-            flex-shrink: 0;
-        }
-
-        .sidebar-controls button {
-            flex: 1;
-            min-width: 40px;
-            padding: 5px 6px;
-            font-size: 11px;
-        }
-        
-        .panels {
-            flex: 1;
-            display: flex;
-            gap: 12px;
-            overflow: hidden;
-            min-height: 0;
-        }
-
-        .panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-dark);
-            border-radius: 5px;
-            overflow: hidden;
-            border: 1px solid var(--bg-light);
-            min-height: 0;
-        }
-        
-        .panel h2 {
-            padding: 8px 12px;
-            background: var(--bg-light);
-            font-size: 13px;
-            text-align: center;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-        
-        .editor-wrapper {
-            flex: 1;
-            overflow: hidden;
-            min-height: 0;
-        }
-        
-        .editor {
-            width: 100%;
-            height: 100%;
-            padding: 12px;
-            border: none;
-            background: var(--bg-dark);
-            color: var(--fg);
-            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            overflow: auto;
-            tab-size: 4;
-            resize: none;
-            outline: none;
-        }
-        
-        .editor:focus {
-            outline: 2px solid var(--blue);
-        }
-        
-        .footer {
-            padding: 10px;
-            background: var(--bg-light);
-            border-top: 1px solid var(--bg);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            position: relative;
-            flex-shrink: 0;
-        }
-        
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        
-        .control-group label {
-            color: var(--fg);
-            font-size: 12px;
-            white-space: nowrap;
-            font-weight: 600;
-        }
-        
-        input[type="text"] {
-            background: var(--bg-dark);
-            border: 1px solid var(--bg-light);
-            color: var(--fg);
-            padding: 5px;
-            width: 40px;
-            text-align: center;
-            border-radius: 3px;
-            font-size: 12px;
-        }
-    
-        .file-input { display: none; }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.show {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--bg);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--bg-light);
-            max-width: 600px;
-            width: 90%;
-            min-width: 280px;
-        }
-
-        .modal-content h3 {
-            margin-bottom: 12px;
-            font-size: 16px;
-        }
-
-        .modal-input {
-            width: 100% !important;
-            padding: 14px !important;
-            margin-bottom: 15px;
-            background: var(--bg-dark);
-            border: 1px solid var(--bg-light);
-            color: var(--fg);
-            border-radius: 3px;
-            font-size: 16px;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 50px;
-            box-sizing: border-box !important;
-            display: block;
-        }
-
-        .modal-buttons {
-            display: flex;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .modal-buttons button {
-            flex: 1;
-            padding: 8px 12px;
-        }
-        
-        @media (max-width: 1024px) {
-            .content {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: 140px;
-                flex-shrink: 0;
-            }
-            
-            .panels {
-                flex-direction: column;
-            }
-            
-            .panel {
-                min-height: 180px;
-            }
-        }
-
-        @media (max-width: 767px) {
-            .container {
-                height: auto;
-                min-height: 100vh;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .content {
-                flex-direction: column;
-                gap: 10px;
-                padding: 10px;
-                flex: 1;
-            }
-            
-            .sidebar {
-                width: 100%;
-                height: 120px;
-                flex-shrink: 0;
-            }
-            
-            .sketches-list {
-                padding: 5px;
-            }
-
-            .sketch-item {
-                padding: 6px;
-                margin-bottom: 4px;
-                font-size: 11px;
-            }
-
-            .sketch-item-name {
-                margin-bottom: 2px;
-            }
-
-            .sketch-item-date {
-                font-size: 9px;
-            }
-
-            .sidebar-controls {
-                padding: 5px;
-                gap: 2px;
-            }
-
-            .sidebar-controls button {
-                font-size: 10px;
-                padding: 4px 5px;
-            }
-            
-            .panels {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .panel {
-                min-height: 200px;
-                flex: 1;
-            }
-
-            .editor {
-                padding: 10px;
-                font-size: 12px;
-            }
-
-            .main-controls {
-                gap: 6px;
-                padding: 8px;
-            }
-
-            button {
-                padding: 7px 10px;
-                font-size: 12px;
-            }
-
-            .footer {
-                flex-direction: column;
-                gap: 8px;
-                padding: 8px;
-            }
-
-            .control-group {
-                width: 100%;
-                justify-content: space-between;
-                gap: 6px;
-            }
-
-            .control-group label {
-                width: 100%;
-                text-align: center;
-                font-size: 12px;
-                margin-bottom: 4px;
-            }
-
-            .control-group input {
-                flex: 1;
-                min-width: 50px;
-            }
-
-            .control-group button {
-                flex: 1;
-            }
-
-            input[type="text"] {
-                width: auto;
-                flex: 1;
-                min-width: 50px;
-            }
-
-            .header h1 {
-                font-size: 18px;
-            }
-
-            .modal {
-                padding: 15px;
-            }
-
-            .modal-content {
-                padding: 15px;
-            }
-
-            .modal-input {
-                font-size: 16px;
-                padding: 12px;
-            }
-
-            .modal-buttons button {
-                padding: 10px;
-                font-size: 13px;
-            }
-        }
-
-        @media (max-width: 479px) {
-            body {
-                padding: 5px;
-            }
-
-            .container {
-                border-radius: 4px;
-            }
-
-            .header {
-                padding: 8px 10px;
-            }
-
-            .header h1 {
-                font-size: 16px;
-            }
-
-            .main-controls {
-                padding: 6px;
-                gap: 4px;
-            }
-
-            button {
-                padding: 6px 8px;
-                font-size: 11px;
-            }
-
-            .sidebar {
-                height: 100px;
-            }
-
-            .sidebar h2 {
-                padding: 8px 10px;
-                font-size: 12px;
-            }
-
-            .sketch-item {
-                padding: 5px;
-                margin-bottom: 3px;
-                font-size: 10px;
-            }
-
-            .editor {
-                padding: 8px;
-                font-size: 11px;
-            }
-
-            .panel h2 {
-                padding: 7px 10px;
-                font-size: 12px;
-            }
-
-            .footer {
-                padding: 6px;
-                gap: 6px;
-            }
-
-            .control-group {
-                gap: 4px;
-            }
-
-            .control-group label {
-                font-size: 11px;
-            }
-
-            input[type="text"] {
-                padding: 4px;
-                font-size: 11px;
-            }
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header" id="header">
-            <h1>papagaio</h1>
-            <small style="display: block; font-size: 11px; opacity: 0.8;">easy text preprocessor</small>
-        </div>
-        
-        <div class="content">
-            <div class="panels">
-                <div class="panel">
-                    <h2>INPUT</h2>
-                    <div class="editor-wrapper">
-                        <textarea id="input" class="editor" spellcheck="false"></textarea>
-                    </div>
-                    <button onclick="processCode()">process</button>
-                </div>
-                <div class="panel">
-                    <h2>OUTPUT</h2>
-                    <div class="editor-wrapper">
-                        <textarea id="output" class="editor" spellcheck="false" readonly></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar">
-                <h2>Sketches</h2>
-                <div class="sketches-list" id="sketchesList"></div>
-                <div class="sidebar-controls">
-                    <button onclick="showNewSketchModal()" title="New sketch">new</button>
-                    <button onclick="renameCurrentSketch()" title="Rename">rename</button>
-                    <button onclick="deleteCurrentSketch()" title="Delete">delete</button>
-                </div>
-                <div class="sidebar-controls">
-                    <input type="file" id="importFileInput" class="file-input" onchange="importSketches(this.files[0])">
-                    <button onclick="document.getElementById('importFileInput').click()" title="Import">import</button>
-                    <button onclick="exportSketches()" title="Export">export</button>
-                </div>
-            </div>
-        </div>
+    
+    <h1>🦜 papagaio</h1>
+    <p>
+        easy yet powerful text preprocessor.
+    </p>
+    <hr>
+    <div>
+        <label for="sketchSelect">Current Sketch:</label>
+        <select id="sketchSelect" onchange="switchSketch()">
+            <option value="">-- Select Sketch --</option>
+        </select>
+        |
+        <button onclick="createNewSketch()">New Sketch</button>
+        <button onclick="renameCurrentSketch()">Rename</button>
+        <button onclick="deleteCurrentSketch()">Delete</button>
     </div>
-
-    <div class="modal" id="newSketchModal">
-        <div class="modal-content">
-            <h3>New Sketch</h3>
-            <input type="text" id="newSketchName" class="modal-input" placeholder="Sketch name...">
-            <div class="modal-buttons">
-                <button onclick="closeNewSketchModal()">Cancel</button>
-                <button onclick="createNewSketch()">Create</button>
-            </div>
-        </div>
+    <hr>
+    <div>
+        <label for="sketchSelect">Sketches:</label>
+        <button onclick="exportSketches()">Export</button>
+        <input type="file" id="importFileInput" onchange="importSketches(this.files[0])" accept=".json">
     </div>
-
-    <div class="modal" id="renameModal">
-        <div class="modal-content">
-            <h3>Rename Sketch</h3>
-            <input type="text" id="renameInput" class="modal-input" placeholder="New name...">
-            <div class="modal-buttons">
-                <button onclick="closeRenameModal()">Cancel</button>
-                <button onclick="confirmRename()">Rename</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="deleteModal">
-        <div class="modal-content">
-            <h3>Delete Sketch</h3>
-            <p style="color: var(--fg); margin-bottom: 15px; font-size: 14px;">Are you sure you want to delete this sketch? This action cannot be undone.</p>
-            <div class="modal-buttons">
-                <button onclick="closeDeleteModal()">Cancel</button>
-                <button onclick="confirmDelete()" style="background: var(--red);">Delete</button>
-            </div>
-        </div>
-    </div>
+    
+    <hr>
+    
+    <h3>INPUT</h3>
+    <textarea id="input" rows="15" cols="80" style="width: 70%; font-family: monospace;"></textarea>
+    
+    <br><br>
+    
+    <button onclick="processCode()">Process</button>
+    
+    <br><br>
+    
+    <h3>OUTPUT</h3>
+    <textarea id="output" rows="15" cols="80" style="width: 70%; font-family: monospace;" readonly></textarea>
 
     <script type="module">
         import { Papagaio } from './src/papagaio.js';
@@ -744,7 +139,7 @@
         window.addEventListener('load', () => {
             sketchesManager = new SketchesManager();
             loadOrCreateDefaultSketch();
-            renderSketches();
+            populateSketchSelect();
         });
 
         function loadOrCreateDefaultSketch() {
@@ -779,95 +174,89 @@
             }
         }
 
-        function renderSketches() {
-            const list = document.getElementById('sketchesList');
-            list.innerHTML = '';
-            const sketches = sketchesManager.getAllSketches();
+        function populateSketchSelect() {
+            const select = document.getElementById('sketchSelect');
+            select.innerHTML = '<option value="">-- Select Sketch --</option>';
             
+            const sketches = sketchesManager.getAllSketches();
             sketches.forEach(sketch => {
-                const item = document.createElement('div');
-                item.className = 'sketch-item' + (sketch.id === sketchesManager.currentSketchId ? ' active' : '');
-                item.innerHTML = `
-                    <div class="sketch-item-name">${sketch.name}</div>
-                    <div class="sketch-item-date">${sketch.createdAt}</div>
-                `;
-                item.onclick = () => switchSketch(sketch.id);
-                list.appendChild(item);
+                const option = document.createElement('option');
+                option.value = sketch.id;
+                option.textContent = sketch.name;
+                if (sketch.id === sketchesManager.currentSketchId) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
             });
         }
 
-        function switchSketch(id) {
+        function switchSketch() {
+            const select = document.getElementById('sketchSelect');
+            const id = select.value;
+            
+            if (!id) return;
+            
             saveCurrentSketch();
             sketchesManager.setCurrentSketchId(id);
+            const sketch = sketchesManager.getSketch(id);
+            
+            if (sketch) {
+                document.getElementById('input').value = sketch.input;
+                document.getElementById('output').value = sketch.output;
+            }
+        }
+
+        function createNewSketch() {
+            const name = prompt('Enter sketch name:');
+            if (!name || !name.trim()) {
+                alert('Please enter a valid sketch name');
+                return;
+            }
+            
+            const id = sketchesManager.createSketch(name.trim());
+            populateSketchSelect();
+            
             const sketch = sketchesManager.getSketch(id);
             if (sketch) {
                 document.getElementById('input').value = sketch.input;
                 document.getElementById('output').value = sketch.output;
-                renderSketches();
             }
-        }
-
-        function showNewSketchModal() {
-            document.getElementById('newSketchModal').classList.add('show');
-            document.getElementById('newSketchName').focus();
-        }
-
-        function closeNewSketchModal() {
-            document.getElementById('newSketchModal').classList.remove('show');
-            document.getElementById('newSketchName').value = '';
-        }
-
-        function createNewSketch() {
-            const name = document.getElementById('newSketchName').value.trim();
-            if (!name) {
-                alert('Please enter a sketch name');
-                return;
-            }
-            const id = sketchesManager.createSketch(name);
-            closeNewSketchModal();
-            switchSketch(id);
         }
 
         function renameCurrentSketch() {
-            if (!sketchesManager.currentSketchId) return;
-            const sketch = sketchesManager.getSketch(sketchesManager.currentSketchId);
-            document.getElementById('renameInput').value = sketch.name;
-            document.getElementById('renameModal').classList.add('show');
-            document.getElementById('renameInput').focus();
-        }
-
-        function closeRenameModal() {
-            document.getElementById('renameModal').classList.remove('show');
-        }
-
-        function confirmRename() {
-            const newName = document.getElementById('renameInput').value.trim();
-            if (!newName) {
-                alert('Please enter a name');
+            if (!sketchesManager.currentSketchId) {
+                alert('No sketch selected');
                 return;
             }
-            sketchesManager.renameSketch(sketchesManager.currentSketchId, newName);
-            closeRenameModal();
-            renderSketches();
+            
+            const sketch = sketchesManager.getSketch(sketchesManager.currentSketchId);
+            const newName = prompt('Enter new name:', sketch.name);
+            
+            if (!newName || !newName.trim()) {
+                alert('Please enter a valid name');
+                return;
+            }
+            
+            sketchesManager.renameSketch(sketchesManager.currentSketchId, newName.trim());
+            populateSketchSelect();
         }
 
         function deleteCurrentSketch() {
-            if (!sketchesManager.currentSketchId) return;
-            document.getElementById('deleteModal').classList.add('show');
-        }
-
-        function closeDeleteModal() {
-            document.getElementById('deleteModal').classList.remove('show');
-        }
-
-        function confirmDelete() {
-            if (!sketchesManager.currentSketchId) return;
+            if (!sketchesManager.currentSketchId) {
+                alert('No sketch selected');
+                return;
+            }
+            
+            const sketch = sketchesManager.getSketch(sketchesManager.currentSketchId);
+            
+            if (!confirm(`Are you sure you want to delete "${sketch.name}"? This action cannot be undone.`)) {
+                return;
+            }
+            
             sketchesManager.deleteSketch(sketchesManager.currentSketchId);
-            closeDeleteModal();
             loadOrCreateDefaultSketch();
-            renderSketches();
+            populateSketchSelect();
         }
-
 
         function processCode() {
             try {
@@ -881,7 +270,10 @@
         }
 
         function exportSketches() {
-            const data = {papagaio_sketches: localStorage.getItem('papagaio_sketches'), papagaio_current_sketch: localStorage.getItem('papagaio_current_sketch')};
+            const data = {
+                papagaio_sketches: localStorage.getItem('papagaio_sketches'),
+                papagaio_current_sketch: localStorage.getItem('papagaio_current_sketch')
+            };
 
             const blob = new Blob([JSON.stringify(data, null, 2)], {
                 type: "application/json"
@@ -894,17 +286,23 @@
         }
 
         function importSketches(file) {
+            if (!file) return;
+            
             const reader = new FileReader();
 
             reader.onload = () => {
-                const data = JSON.parse(reader.result);
-                if (data.papagaio_sketches) {
-                    localStorage.setItem('papagaio_sketches', data.papagaio_sketches);
+                try {
+                    const data = JSON.parse(reader.result);
+                    if (data.papagaio_sketches) {
+                        localStorage.setItem('papagaio_sketches', data.papagaio_sketches);
+                    }
+                    if (data.papagaio_current_sketch) {
+                        localStorage.setItem('papagaio_current_sketch', data.papagaio_current_sketch);
+                    }
+                    location.reload();
+                } catch (err) {
+                    alert('Error importing file: ' + err.message);
                 }
-                if (data.papagaio_current_sketch) {
-                    localStorage.setItem('papagaio_current_sketch', data.papagaio_current_sketch);
-                }
-                location.reload();
             };
 
             reader.readAsText(file);
@@ -915,16 +313,10 @@
         }, 1000);
 
         window.processCode = processCode;
-        
-        window.showNewSketchModal = showNewSketchModal;
-        window.closeNewSketchModal = closeNewSketchModal;
+        window.switchSketch = switchSketch;
         window.createNewSketch = createNewSketch;
         window.renameCurrentSketch = renameCurrentSketch;
-        window.closeRenameModal = closeRenameModal;
-        window.confirmRename = confirmRename;
         window.deleteCurrentSketch = deleteCurrentSketch;
-        window.closeDeleteModal = closeDeleteModal;
-        window.confirmDelete = confirmDelete;
         window.exportSketches = exportSketches;
         window.importSketches = importSketches;
     </script>
