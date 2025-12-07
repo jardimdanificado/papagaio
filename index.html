@@ -289,18 +289,7 @@
             border-radius: 3px;
             font-size: 12px;
         }
-        
-        .status {
-            background: var(--green);
-            color: var(--bg-dark);
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            text-align: center;
-            flex: 1;
-        }
-        
+    
         .file-input { display: none; }
 
         .modal {
@@ -494,11 +483,6 @@
                 font-size: 18px;
             }
 
-            .status {
-                font-size: 11px;
-                padding: 5px 8px;
-            }
-
             .modal {
                 padding: 15px;
             }
@@ -587,11 +571,6 @@
                 padding: 4px;
                 font-size: 11px;
             }
-
-            .status {
-                font-size: 10px;
-                padding: 4px 6px;
-            }
         }
     </style>
 </head>
@@ -602,31 +581,14 @@
             <small style="display: block; font-size: 11px; opacity: 0.8;">easy text preprocessor</small>
         </div>
         
-        <div class="main-controls">
-            <button onclick="loadFile()">Load</button>
-            <button onclick="processCode()">Process</button>
-            <button onclick="downloadResult()">Download</button>
-            <button onclick="clearAll()">Clear</button>
-            <input type="file" id="fileInput" class="file-input" onchange="handleFileSelect()">
-        </div>
-
         <div class="content">
-            <div class="sidebar">
-                <h2>Sketches</h2>
-                <div class="sketches-list" id="sketchesList"></div>
-                <div class="sidebar-controls">
-                    <button onclick="showNewSketchModal()" title="New sketch">new</button>
-                    <button onclick="renameCurrentSketch()" title="Rename">rename</button>
-                    <button onclick="deleteCurrentSketch()" title="Delete">delete</button>
-                </div>
-            </div>
-
             <div class="panels">
                 <div class="panel">
                     <h2>INPUT</h2>
                     <div class="editor-wrapper">
                         <textarea id="input" class="editor" spellcheck="false"></textarea>
                     </div>
+                    <button onclick="processCode()">process</button>
                 </div>
                 <div class="panel">
                     <h2>OUTPUT</h2>
@@ -635,24 +597,20 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
-        <div class="footer">
-            <div class="control-group">
-                <label>Delimiter:</label>
-                <input id="openQuote" type="text" placeholder="{" value="{">
-                <input id="closeQuote" type="text" placeholder="}" value="}">
-                <button onclick="applyQuotes()">Apply</button>
-                <button onclick="resetQuotes()">Reset</button>
-            </div>
 
-            <span id="status" class="status">READY</span>
-
-            <div class="control-group">
-                <label>Sigil:</label>
-                <input id="sigilInput" type="text" placeholder="$" value="$">
-                <button onclick="applySigil()">Apply</button>
-                <button onclick="resetSigil()">Reset</button>
+            <div class="sidebar">
+                <h2>Sketches</h2>
+                <div class="sketches-list" id="sketchesList"></div>
+                <div class="sidebar-controls">
+                    <button onclick="showNewSketchModal()" title="New sketch">new</button>
+                    <button onclick="renameCurrentSketch()" title="Rename">rename</button>
+                    <button onclick="deleteCurrentSketch()" title="Delete">delete</button>
+                </div>
+                <div class="sidebar-controls">
+                    <input type="file" id="importFileInput" class="file-input" onchange="importSketches(this.files[0])">
+                    <button onclick="document.getElementById('importFileInput').click()" title="Import">import</button>
+                    <button onclick="exportSketches()" title="Export">export</button>
+                </div>
             </div>
         </div>
     </div>
@@ -787,7 +745,6 @@
             sketchesManager = new SketchesManager();
             loadOrCreateDefaultSketch();
             renderSketches();
-            updateStatus('READY');
         });
 
         function loadOrCreateDefaultSketch() {
@@ -847,7 +804,6 @@
                 document.getElementById('input').value = sketch.input;
                 document.getElementById('output').value = sketch.output;
                 renderSketches();
-                updateStatus('SKETCH LOADED');
             }
         }
 
@@ -870,7 +826,6 @@
             const id = sketchesManager.createSketch(name);
             closeNewSketchModal();
             switchSketch(id);
-            updateStatus('NEW SKETCH CREATED');
         }
 
         function renameCurrentSketch() {
@@ -894,7 +849,6 @@
             sketchesManager.renameSketch(sketchesManager.currentSketchId, newName);
             closeRenameModal();
             renderSketches();
-            updateStatus('RENAMED ✓');
         }
 
         function deleteCurrentSketch() {
@@ -912,95 +866,48 @@
             closeDeleteModal();
             loadOrCreateDefaultSketch();
             renderSketches();
-            updateStatus('DELETED ✓');
         }
 
-        function updateStatus(message) {
-            document.getElementById('status').textContent = message;
-        }
 
         function processCode() {
             try {
-                updateStatus('PROCESSING...');
                 const input = document.getElementById('input').value;
                 const output = processor.process(input);
                 document.getElementById('output').value = output;
                 saveCurrentSketch();
-                updateStatus('COMPLETED ✓');
             } catch (err) {
                 document.getElementById('output').value = `Error: ${err.message}`;
-                updateStatus('ERROR');
             }
         }
 
-        function loadFile() {
-            document.getElementById('fileInput').click();
-        }
+        function exportSketches() {
+            const data = {papagaio_sketches: localStorage.getItem('papagaio_sketches'), papagaio_current_sketch: localStorage.getItem('papagaio_current_sketch')};
 
-        function handleFileSelect() {
-            const file = document.getElementById('fileInput').files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = e => {
-                document.getElementById('input').value = e.target.result;
-                saveCurrentSketch();
-                updateStatus('FILE LOADED');
-            };
-            reader.readAsText(file);
-        }
+            const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: "application/json"
+            });
 
-        function downloadResult() {
-            const output = document.getElementById('output').value;
-            if (!output) return alert('Nothing to download!');
-            const blob = new Blob([output], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'output.txt';
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `papagaio_sketches_${Date.now()}.json`;
             a.click();
-            URL.revokeObjectURL(url);
-            updateStatus('DOWNLOADED ✓');
         }
 
-        function clearAll() {
-            if (confirm('Clear current sketch input and output?')) {
-                document.getElementById('input').value = '';
-                document.getElementById('output').value = '';
-                saveCurrentSketch();
-                updateStatus('CLEARED');
-            }
-        }
+        function importSketches(file) {
+            const reader = new FileReader();
 
-        function applyQuotes() {
-            const o = document.getElementById('openQuote').value;
-            const c = document.getElementById('closeQuote').value;
-            if (!o || !c) {
-                return alert('Enter both delimiters');
-            }
-            processor.symbols.open = o;
-            processor.symbols.close = c;
-            updateStatus('DELIMITERS APPLIED');
-        }
+            reader.onload = () => {
+                const data = JSON.parse(reader.result);
+                if (data.papagaio_sketches) {
+                    localStorage.setItem('papagaio_sketches', data.papagaio_sketches);
+                }
+                if (data.papagaio_current_sketch) {
+                    localStorage.setItem('papagaio_current_sketch', data.papagaio_current_sketch);
+                }
+                location.reload();
+            };
 
-        function resetQuotes() {
-            processor.symbols.open = '{';
-            processor.symbols.close = '}';
-            document.getElementById('openQuote').value = '{';
-            document.getElementById('closeQuote').value = '}';
-            updateStatus('DELIMITERS RESET');
-        }
-
-        function applySigil() {
-            const s = document.getElementById('sigilInput').value;
-            if (!s) return alert('Enter a sigil');
-            processor.symbols.sigil = s;
-            updateStatus('SIGIL APPLIED');
-        }
-
-        function resetSigil() {
-            processor.symbols.sigil = '$';
-            document.getElementById('sigilInput').value = '$';
-            updateStatus('SIGIL RESET');
+            reader.readAsText(file);
         }
 
         setInterval(() => {
@@ -1008,9 +915,7 @@
         }, 1000);
 
         window.processCode = processCode;
-        window.loadFile = loadFile;
-        window.downloadResult = downloadResult;
-        window.clearAll = clearAll;
+        
         window.showNewSketchModal = showNewSketchModal;
         window.closeNewSketchModal = closeNewSketchModal;
         window.createNewSketch = createNewSketch;
@@ -1020,10 +925,8 @@
         window.deleteCurrentSketch = deleteCurrentSketch;
         window.closeDeleteModal = closeDeleteModal;
         window.confirmDelete = confirmDelete;
-        window.applyQuotes = applyQuotes;
-        window.resetQuotes = resetQuotes;
-        window.applySigil = applySigil;
-        window.resetSigil = resetSigil;
+        window.exportSketches = exportSketches;
+        window.importSketches = importSketches;
     </script>
 </body>
 </html>
