@@ -88,7 +88,6 @@
                     id,
                     name,
                     input: '',
-                    output: '',
                     createdAt: new Date().toLocaleString()
                 };
                 this.saveSketches();
@@ -161,15 +160,14 @@
             
             if (sketch) {
                 document.getElementById('input').value = sketch.input;
-                document.getElementById('output').value = sketch.output;
+                document.getElementById('output').value = '';
             }
         }
 
         function saveCurrentSketch() {
             if (sketchesManager.currentSketchId) {
                 sketchesManager.updateSketch(sketchesManager.currentSketchId, {
-                    input: document.getElementById('input').value,
-                    output: document.getElementById('output').value
+                    input: document.getElementById('input').value
                 });
             }
         }
@@ -202,7 +200,7 @@
             
             if (sketch) {
                 document.getElementById('input').value = sketch.input;
-                document.getElementById('output').value = sketch.output;
+                document.getElementById('output').value = '';
             }
         }
 
@@ -219,7 +217,7 @@
             const sketch = sketchesManager.getSketch(id);
             if (sketch) {
                 document.getElementById('input').value = sketch.input;
-                document.getElementById('output').value = sketch.output;
+                document.getElementById('output').value = '';
             }
         }
 

@@ -133,13 +133,17 @@ function extractBlock(p, src, openPos, openDelim = p.symbols.open, closeDelim = 
 }
 
 function collectPatterns(p, src) {
-    const A = [], r = new RegExp(`(?:^|\\b)${p.symbols.pattern}\\s*\\${p.symbols.open}`, "g"); let out = src;
+    const A = [];
+    // MUDANÇA: usar escapeRegex para suportar delimitadores multi-caractere
+    const r = new RegExp(`(?:^|\\b)${escapeRegex(p.symbols.pattern)}\\s*${escapeRegex(p.symbols.open)}`, "g");
+    let out = src;
+    
     while (1) {
         r.lastIndex = 0; const m = r.exec(out); if (!m) break;
-        const s = m.index, o = m.index + m[0].length - 1;
+        const s = m.index, o = m.index + m[0].length - p.symbols.open.length;
         const [mp, em] = extractBlock(p, out, o); let k = em;
         while (k < out.length && /\s/.test(out[k])) k++;
-        if (k < out.length && out[k] === p.symbols.open) {
+        if (k < out.length && out.substring(k, k + p.symbols.open.length) === p.symbols.open) {
             const [rp, er] = extractBlock(p, out, k);
             A.push({ match: mp.trim(), replace: rp.trim() });
             out = out.slice(0, s) + out.slice(er); continue;
@@ -151,7 +155,8 @@ function collectPatterns(p, src) {
 
 function extractNestedPatterns(p, replaceText) {
     const nested = [];
-    const r = new RegExp(`\\${p.symbols.sigil}${p.symbols.pattern}\\s*\\${p.symbols.open}`, "g");
+    // MUDANÇA: usar escapeRegex para suportar delimitadores multi-caractere
+    const r = new RegExp(`${escapeRegex(p.symbols.sigil)}${escapeRegex(p.symbols.pattern)}\\s*${escapeRegex(p.symbols.open)}`, "g");
     let out = replaceText;
 
     while (1) {
@@ -159,13 +164,13 @@ function extractNestedPatterns(p, replaceText) {
         const m = r.exec(out);
         if (!m) break;
 
-        const s = m.index, o = m.index + m[0].length - 1;
+        const s = m.index, o = m.index + m[0].length - p.symbols.open.length;
         const [mp, em] = extractBlock(p, out, o);
         let k = em;
 
         while (k < out.length && /\s/.test(out[k])) k++;
 
-        if (k < out.length && out[k] === p.symbols.open) {
+        if (k < out.length && out.substring(k, k + p.symbols.open.length) === p.symbols.open) {
             const [rp, er] = extractBlock(p, out, k);
             nested.push({ match: mp.trim(), replace: rp.trim() });
             out = out.slice(0, s) + out.slice(er);
@@ -198,7 +203,7 @@ function extractEvalExpressions(p, text) {
             // Pula espaços em branco
             while (j < text.length && /\s/.test(text[j])) j++;
 
-            // Verifica se tem o delimitador de abertura
+            // Verifica se tem o delimitador de abertura (já suporta multi-caractere)
             if (j < text.length && text.substring(j, j + O.length) === O) {
                 const startPos = i;
                 const blockStart = j;
@@ -304,7 +309,8 @@ export class Papagaio {
     process(input) {
         this.content = input; let src = input, last = null, it = 0;
         const pend = () => {
-            const r2 = new RegExp(`(?:^|\\b)${this.symbols.pattern}\\s*\\${this.symbols.open}`, "g");
+            // MUDANÇA: usar escapeRegex para suportar delimitadores multi-caractere
+            const r2 = new RegExp(`(?:^|\\b)${escapeRegex(this.symbols.pattern)}\\s*${escapeRegex(this.symbols.open)}`, "g");
             return r2.test(src);
         };
         while (src !== last && it < this.recursion_limit) {
