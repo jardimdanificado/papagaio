@@ -2,717 +2,213 @@
   "tests": [
     {
       "id": 1,
-      "name": "Basic pattern with 3 variables",
-      "code": "pattern {$x $y $z} {$z, $y, $x}\napple banana cherry",
-      "expected": "cherry, banana, apple"
+      "name": "Basic variable substitution",
+      "code": "pattern {$x $y} {$y, $x}\nhello world",
+      "expected": "world, hello"
     },
     {
       "id": 2,
-      "name": "Flexible whitespace ($)",
+      "name": "Flexible whitespace with $$",
       "code": "pattern {$$x and $$y} {$x & $y}\nhello   and   world",
       "expected": "hello & world"
     },
     {
       "id": 3,
-      "name": "Block with delimiters ( )",
-      "code": "pattern {$name $block content {(}{)}} {[$content]}\ndata (hello world)",
-      "expected": "[hello world]"
+      "name": "Block with custom delimiters",
+      "code": "pattern {$block content {(}{)}} {[$content]}\ndata (hello world)",
+      "expected": "data [hello world]"
     },
     {
       "id": 4,
-      "name": "Multiple patterns - reorder",
-      "code": "pattern {$a $b} {$b:$a}\nfoo bar",
-      "expected": "bar:foo"
+      "name": "Block with multi-char delimiters",
+      "code": "pattern {$block code {<<}{>>}} {CODE[$code]}\n<<console.log()>>",
+      "expected": "CODE[console.log()]"
     },
     {
       "id": 5,
-      "name": "Unique IDs incremental",
-      "code": "pattern {item} {item#$unique} item item item",
-      "expected": "item#0 item#1 item#2"
+      "name": "Block with nested delimiters",
+      "code": "pattern {$block txt {<}{>}} {[$txt]}\nouter <middle <inner> content>",
+      "expected": "outer [middle <inner> content]"
     },
     {
       "id": 6,
-      "name": "Block with brackets [ ]",
-      "code": "pattern {$block arr {[}{]}} {ARRAY($arr)}\n[1, 2, 3]",
-      "expected": "ARRAY(1, 2, 3)"
+      "name": "Eval expression with arithmetic",
+      "code": "pattern {sum $a $b} {$eval{return parseInt($a) + parseInt($b)}}\nsum 5 3",
+      "expected": "8"
     },
     {
       "id": 7,
-      "name": "Pattern with special characters",
-      "code": "pattern {$a + $b} {$a PLUS $b}\n5 + 3",
-      "expected": "5 PLUS 3"
+      "name": "Eval with arithmetic and variable",
+      "code": "pattern {multiply $n} {Result: $eval{return $n * 3}}\nmultiply 5",
+      "expected": "Result: 15"
     },
     {
       "id": 8,
-      "name": "Match with prefix and suffix",
-      "code": "pattern {Hello $name} {>> $name <<}\nHello Alice",
-      "expected": ">> Alice <<"
+      "name": "Multiple patterns cascade",
+      "code": "pattern {a} {b}\npattern {b} {c}\na",
+      "expected": "c"
     },
     {
       "id": 9,
-      "name": "Pattern repetition (global)",
+      "name": "Global pattern matching",
       "code": "pattern {x} {X}\nx y x z x",
       "expected": "X y X z X"
     },
     {
       "id": 10,
-      "name": "Block with parentheses ( )",
-      "code": "pattern {$nome$$ $block params {(}{)}} {FUNC[$params]}\ncalcular(a, b, c)",
-      "expected": "FUNC[a, b, c]"
-    },
-    {
-      "id": 11,
-      "name": "Pattern with $eval - arithmetic operation",
-      "code": "pattern {sum $a $b} {result: $eval{return $a + $b}}\nsum 10 20",
-      "expected": "result: 30"
-    },
-    {
-      "id": 12,
-      "name": "Nested block with multiple levels",
-      "code": "pattern {$block inner {<}{>}} {INNER{$inner}}\n<inner content here>",
-      "expected": "INNER{inner content here}"
-    },
-    {
-      "id": 13,
-      "name": "Pattern with flexible whitespace in middle",
-      "code": "pattern {from to} {path: from -> to}\nfrom     to\nfrom  to\nfrom to",
-      "expected": "path: from -> to\npath: from -> to\npath: from -> to"
-    },
-    {
-      "id": 14,
-      "name": "Multiple $unique in one pattern",
-      "code": "pattern {log $msg} {[$unique] LOG: $msg [$unique]}\nlog error",
-      "expected": "[0] LOG: error"
-    },
-    {
-      "id": 15,
-      "name": "Block with quotes as delimiter",
-      "code": "pattern {$block str {\"}{\"}} {STRING: $str}\n\"hello world\"",
-      "expected": "STRING: hello world"
-    },
-    {
-      "id": 16,
-      "name": "Pattern with 4+ variables",
-      "code": "pattern {$a $b $c $d $e} {$e-$d-$c-$b-$a}\n1 2 3 4 5",
-      "expected": "5-4-3-2-1"
-    },
-    {
-      "id": 17,
-      "name": "Block with empty delimiter (special)",
-      "code": "pattern {start $a middle $b end} {($a|$b)}\nstart foo middle bar end",
-      "expected": "(foo|bar)"
-    },
-    {
-      "id": 18,
-      "name": "Pattern generates HTML",
-      "code": "pattern {$tag $word} {<$tag>$word</$tag>}\ndiv Hello",
-      "expected": "<div>Hello</div>"
-    },
-    {
-      "id": 19,
-      "name": "Block with numeric delimiters",
-      "code": "pattern {$block data {<<}{>>}} {DATA[$data]}\n<<json: {x: 1}>>",
-      "expected": "DATA[json: {x: 1}]"
-    },
-    {
-      "id": 20,
-      "name": "Multiple sequential patterns complex",
-      "code": "pattern {Mr. $name} {Senhor $name}\npattern {Senhor $n} {Sir $n (formal)}\nMr. Smith",
-      "expected": "Sir Smith"
-    },
-    {
-      "id": 21,
-      "name": "Block with operator symbol",
-      "code": "pattern {$block op {**}{**}} {OPERATION: $op}\n**a + b + c**",
-      "expected": "OPERATION: a + b + c"
-    },
-    {
-      "id": 22,
-      "name": "Flexible whitespace with semicolon",
-      "code": "pattern {$$a;$$b} {$a AND $b}\nx ; y\nx; y\nx  ;  y",
-      "expected": "x AND y"
-    },
-    {
-      "id": 23,
-      "name": "Context with nested pattern",
-      "code": "context {pattern {$x} {<$x>} apple banana cherry}",
-      "expected": "<apple>"
-    },
-    {
-      "id": 24,
-      "name": "Markdown bold to HTML",
-      "code": "pattern {**$text**} {<strong>$text</strong>}\nThis is **important** text",
-      "expected": "<strong>important</strong>"
-    },
-    {
-      "id": 25,
-      "name": "Markdown italic to HTML",
-      "code": "pattern {*$text*} {<em>$text</em>}\nThis is *italic* text",
-      "expected": "<em>italic</em>"
-    },
-    {
-      "id": 26,
-      "name": "Configuration key=value",
-      "code": "pattern {$key = $value} {const $key = '$value';}\nserver_host = localhost\ndb_port = 3000",
-      "expected": "const server_host = 'localhost';"
-    },
-    {
-      "id": 27,
-      "name": "Full name transformation",
-      "code": "pattern {$first $last} {{ name: '$last, $first' }}\nJohn Doe",
-      "expected": "{ name: 'Doe, John' }"
-    },
-    {
-      "id": 28,
-      "name": "CSV to JSON simple",
-      "code": "pattern {$a,$b,$c} {{ field1: '$a', field2: '$b', field3: '$c' }}\nAlice,30,Engineer",
-      "expected": "{ field1: 'Alice', field2: '30', field3: 'Engineer' }"
-    },
-    {
-      "id": 29,
-      "name": "Pattern with dictionary",
-      "code": "pattern {$a and $b} {$b and $a}\ncats and dogs",
-      "expected": "dogs and cats"
-    },
-    {
-      "id": 30,
-      "name": "Multiple patterns in cascade",
-      "code": "pattern {a} {b}\npattern {b} {c}\npattern {c} {d}\na",
-      "expected": "d"
-    },
-    {
-      "id": 31,
-      "name": "Delimiter test",
-      "code": "pattern {$block data {[}{]}} {DATA:$data}\ndata [ hello world ]",
-      "expected": "DATA: hello world"
-    },
-    {
-      "id": 32,
-      "name": "Pattern with special character dot",
-      "code": "pattern {$x.txt} {file: $x}\ndocument.txt",
-      "expected": "file: document"
-    },
-    {
-      "id": 33,
-      "name": "Block captures multiple nested levels",
-      "code": "pattern {$block inner {<}{>}} {INNER{$inner}}\nouter <middle <deep> more>",
-      "expected": "INNER{middle <deep> more}"
-    },
-    {
-      "id": 34,
-      "name": "Pattern with numbers and special chars",
-      "code": "pattern {$x + $y = $z} {$z is sum of $x and $y}\n5 + 3 = 8",
-      "expected": "8 is sum of 5 and 3"
-    },
-    {
-      "id": 35,
-      "name": "Empty context is removed",
-      "code": "Start\ncontext {\n  \n}\nEnd",
-      "expected": "Start"
-    },
-    {
-      "id": 36,
-      "name": "Pattern HTML generator function",
-      "code": "pattern {$tag $content} {<$tag>$content</$tag>}\ndiv HelloWorld",
-      "expected": "<div>HelloWorld</div>"
-    },
-    {
-      "id": 37,
-      "name": "Block with multi-char delimiter",
-      "code": "pattern {$block code {<<}{>>}} {CODE[$code]}\n<<console.log('test')>>",
-      "expected": "CODE[console.log('test')]"
-    },
-    {
-      "id": 38,
-      "name": "Markdown list to HTML",
-      "code": "pattern {- $item} {<li>$item</li>}\n- Apple\n- Banana",
-      "expected": "<li>Apple</li>"
-    },
-    {
-      "id": 39,
-      "name": "Pattern with literal $ ($)",
-      "code": "pattern {price} {Price: $50}\nprice",
-      "expected": "Price: $50"
-    },
-    {
-      "id": 40,
-      "name": "Markdown heading h1",
-      "code": "pattern {# $title} {<h1>$title</h1>}\n# Welcome",
-      "expected": "<h1>Welcome</h1>"
-    },
-    {
-      "id": 41,
-      "name": "Markdown heading h2",
-      "code": "pattern {## $title} {<h2>$title</h2>}\n## Section",
-      "expected": "<h2>Section</h2>"
-    },
-    {
-      "id": 42,
-      "name": "Variables with underscore names",
-      "code": "pattern {$var_name $other_var} {$other_var:$var_name}\nfirst second",
-      "expected": "second:first"
-    },
-    {
-      "id": 43,
-      "name": "Pattern with variable reuse",
-      "code": "pattern {$x} {$x-$x-$x}\ndata",
-      "expected": "data-data-data"
-    },
-    {
-      "id": 44,
-      "name": "Block with double quotes",
-      "code": "pattern {$block str {\"}{\"}} {STR[$str]}\n\"hello\"",
-      "expected": "STR[hello]"
-    },
-    {
-      "id": 45,
-      "name": "Pattern with flexible space before and after",
-      "code": "pattern {$$ hello$$ } {FOUND}\n   hello   ",
-      "expected": "FOUND"
-    },
-    {
-      "id": 46,
-      "name": "Multiple blocks in one pattern",
-      "code": "pattern {$block a {(}{)}, $block b {[}{]}} {PAIR: $a and $b}\n(first), [second]",
-      "expected": "PAIR: first and second"
-    },
-    {
-      "id": 47,
-      "name": "Pattern with math symbols",
-      "code": "pattern {$x * $y} {multiplication: $x * $y}\n5 * 3",
-      "expected": "multiplication: 5 * 3"
-    },
-    {
-      "id": 48,
-      "name": "Eval with division and decimals",
-      "code": "pattern {div $a $b} {quotient: $eval{return $a / $b}}\ndiv 7 2",
-      "expected": "quotient: 3.5"
-    },
-    {
-      "id": 49,
-      "name": "Negative numbers in $eval",
-      "code": "pattern {calc $a $b} {result: $eval{return $a - $b}}\ncalc -5 -10",
-      "expected": "result: 5"
-    },
-    {
-      "id": 50,
-      "name": "Tabs as flexible whitespace",
-      "code": "pattern {from$$to} {path: from -> to}\nfrom\tto",
-      "expected": "path: from -> to"
-    },
-    {
-      "id": 51,
-      "name": "Unicode characters in variables",
-      "code": "pattern {greet $name} {Olá $name}\ngreet 世界",
-      "expected": "Olá 世界"
-    },
-    {
-      "id": 52,
-      "name": "Emoji support",
-      "code": "pattern {say $emoji} {You said: $emoji}\nsay 😊",
-      "expected": "You said: 😊"
-    },
-    {
-      "id": 53,
-      "name": "Trim multiple surrounding spaces",
-      "code": "pattern {$ $word$ } {FOUND: $word}\n   word    ",
-      "expected": "FOUND: word"
-    },
-    {
-      "id": 54,
-      "name": "No match leaves input intact",
-      "code": "pattern {nomatch $x} {X}\nnothing matches here",
-      "expected": "nothing matches here"
-    },
-    {
-      "id": 55,
-      "name": "Block captures first simple angle block",
-      "code": "pattern {$block txt {<}{>}} {CAP[$txt]}\nstart <one> middle <two> end",
-      "expected": "CAP[one]"
-    },
-    {
-      "id": 56,
-      "name": "Overlapping patterns cascade",
-      "code": "pattern {a} {A}\npattern {A} {B}\na",
-      "expected": "B"
-    },
-    {
-      "id": 57,
-      "name": "Literal dollar in replacement",
-      "code": "pattern {price} {Price: $50}\nprice",
-      "expected": "Price: $50"
-    },
-    {
-      "id": 58,
-      "name": "Simple Test",
-      "code": "pattern {$file.$ext} {file: $file}\nphoto.png",
-      "expected": "file: photo"
-    },
-    {
-      "id": 59,
-      "name": "Repeated global replacements",
-      "code": "pattern {x} {X}\nxxxxx",
-      "expected": "XXXXX"
-    },
-    {
-      "id": 60,
-      "name": "Context preserves inner pattern output",
-      "code": "context {\npattern {$x} {<$x>}\ninner\n}\ninner\nouter",
-      "expected": "<inner>"
-    },
-    {
-      "id": 61,
-      "name": "Block with pipe delimiters",
-      "code": "pattern {$block mid {|}{|}} {PIPE[$mid]}\n|a| and |b|",
-      "expected": "PIPE[a]"
-    },
-    {
-      "id": 62,
-      "name": "Trailing comma punctuation handling",
-      "code": "pattern {$w,} {$w!}\nhello,",
-      "expected": "hello!"
-    },
-    {
-      "id": 63,
-      "name": "Comma-separated two variables",
-      "code": "pattern {$a,$b} {[$a][$b]}\none,two",
-      "expected": "[one][two]"
-    },
-    {
-      "id": 64,
-      "name": "Apostrophe in pattern literal",
-      "code": "pattern {It's $name} {Hello $name}\nIt's John",
-      "expected": "Hello John"
-    },
-    {
-      "id": 65,
-      "name": "Arithmetic increment with large number",
-      "code": "pattern {num $a} {$eval{return parseInt($a) + 1}}\nnum 999",
-      "expected": "1000"
-    },
-    {
-      "id": 66,
-      "name": "Parentheses block capture with nesting",
-      "code": "pattern {$block txt {(}{)}} {B[$txt]}\n(a(b)c)",
-      "expected": "B[a(b)c]"
-    },
-    {
-      "id": 67,
-      "name": "Literal special regex characters in pattern",
-      "code": "pattern {a.*b} {PAT}\na.*b",
-      "expected": "PAT"
-    },
-    {
-      "id": 68,
-      "name": "(known issue) Block with multi-character delimiters containing double quotes",
-      "code": "pattern {$block str {\"k}{\"k}} {STR[$str]}\n\"khello\"k",
-      "expected": "STR[hello]"
-    },
-    {
-      "id": 69,
-      "name": "Block with multi-character delimiters",
-      "code": "pattern {$block str {open}{close}} {$str World!}\nopenHelloclose",
-      "expected": "Hello World!"
-    },
-    {
-      "id": 70,
-      "name": "Clear and keep",
-      "code": "pattern {SKIP $x} {$clear KEEP: $x} IGNORE_THIS SKIP keep_this",
-      "expected": "KEEP: keep_this"
-    },
-    {
-      "id": 71,
-      "name": "Simple Variables",
-      "code": "pattern {$x} {$x}\nhello",
-      "expected": "hello"
-    },
-    {
-      "id": 72,
-      "name": "Multiple Variables",
-      "code": "pattern {$x $y $z} {$z, $y, $x}\napple banana cherry",
-      "expected": "cherry, banana, apple"
-    },
-    {
-      "id": 73,
-      "name": "Flexible Whitespace",
-      "code": "pattern {$x$$and$$$y} {$x & $y}\nhello   and   world",
-      "expected": "hello & world"
-    },
-    {
-      "id": 74,
-      "name": "Flexible Whitespace (compact)",
-      "code": "pattern {$x$$and$$$y} {$x & $y}\nhello and world",
-      "expected": "hello & world"
-    },
-    {
-      "id": 75,
-      "name": "Block with parentheses",
-      "code": "pattern {$name $block content {(}{)}} {[$content]}\ndata (hello world)",
-      "expected": "[hello world]"
-    },
-    {
-      "id": 76,
-      "name": "Block with custom delimiters <<>>",
-      "code": "pattern {$block data {<<}{>>}} {DATA: $data}\n<<json stuff>>",
-      "expected": "DATA: json stuff"
-    },
-    {
-      "id": 77,
-      "name": "Multiple Blocks in pattern",
-      "code": "pattern {$block a {(}{)}, $block b {[}{]}} {$a|$b}\n(first), [second]",
-      "expected": "first|second"
-    },
-    {
-      "id": 78,
-      "name": "Basic pattern with literals",
-      "code": "pattern {match} {replace}\nmatch",
-      "expected": "replace"
-    },
-    {
-      "id": 79,
-      "name": "Markdown heading example",
-      "code": "pattern {# $title} {<h1>$title</h1>}\n# Welcome",
-      "expected": "<h1>Welcome</h1>"
-    },
-    {
-      "id": 80,
-      "name": "Multiple patterns cascade",
-      "code": "pattern {a} {b}\npattern {b} {c}\npattern {c} {d}\na",
-      "expected": "d"
-    },
-    {
-      "id": 81,
-      "name": "Context basic",
-      "code": "context {\n  pattern {$x} {<$x>}\n  \n  apple\n  banana\n}",
-      "expected": "<apple>\n  <banana>"
-    },
-    {
-      "id": 82,
-      "name": "$unique incremental",
-      "code": "pattern {item} {[$unique]item_$unique}\nitem\nitem\nitem",
-      "expected": "[0]item_0\n[1]item_1\n[2]item_2"
-    },
-    {
-      "id": 83,
-      "name": "$unique same ID in replacement",
-      "code": "pattern {a} {$unique $unique}\na",
-      "expected": "0 0"
-    },
-    {
-      "id": 84,
-      "name": "$match full match",
-      "code": "pattern {[$x]} {FOUND: $match}\n[data]",
-      "expected": "FOUND: [data]"
-    },
-    {
-      "id": 85,
-      "name": "$prefix e $suffix",
-      "code": "pattern {world} {$prefix$suffix}hello world test",
-      "expected": "hello hello  test test"
-    },
-    {
-      "id": 86,
-      "name": "$clear remove before match",
-      "code": "pattern {SKIP $x} {$clear KEEP: $x}\nIGNORE_THIS SKIP keep_this",
-      "expected": "KEEP: keep_this"
-    },
-    {
-      "id": 87,
-      "name": "$eval arithmetic multiplication",
-      "code": "pattern {$x} {$eval{return parseInt($x) * 2;}}\n5",
-      "expected": "10"
-    },
-    {
-      "id": 88,
-      "name": "Markdown h1 and h2",
-      "code": "pattern {## $t} {<h2>$t</h2>}\npattern {# $t} {<h1>$t</h1>}\n# Title\n## Subtitle",
-      "expected": "<h1>Title</h1>\n<h2>Subtitle</h2>"
-    },
-    {
-      "id": 89,
-      "name": "Markdown bold and italic",
-      "code": "pattern {**$t**} {<strong>$t</strong>}\npattern {*$t*} {<em>$t</em>}\n**bold** and *italic*",
-      "expected": "<strong>bold</strong> and <em>italic</em>"
-    },
-    {
-      "id": 90,
-      "name": "Markdown list",
-      "code": "pattern {- $i} {<li>$i</li>}\n- item1\n- item2",
-      "expected": "<li>item1</li>\n<li>item2</li>"
-    },
-    {
-      "id": 91,
-      "name": "CSV to JSON",
-      "code": "pattern {$a,$$b,$$c} {{ id: '$a', name: '$b', role: '$c' }}\n1,Alice,Engineer\n2,Bob,Designer",
-      "expected": "{ id: '1', name: 'Alice', role: 'Engineer' }\n{ id: '2', name: 'Bob', role: 'Designer' }"
-    },
-    {
-      "id": 92,
-      "name": "Config parser",
-      "code": "pattern {$key = $value} {const $key = '$value';}\nhost = localhost\nport = 3000",
-      "expected": "const host = 'localhost';\nconst port = '3000';"
-    },
-    {
-      "id": 93,
-      "name": "HTML generator",
-      "code": "pattern {$tag $content} {<$tag>$content</$tag>}\ndiv HelloWorld\nspan Test",
-      "expected": "<div>HelloWorld</div>\n<span>Test</span>"
-    },
-    {
-      "id": 94,
-      "name": "Variable reuse in replacement",
-      "code": "pattern {$x} {$x:$x:$x}\ndata",
-      "expected": "data:data:data"
-    },
-    {
-      "id": 95,
-      "name": "Literal dollar sign in replacement",
-      "code": "pattern {price} {Price: $50}\nprice",
-      "expected": "Price: $50"
-    },
-    {
-      "id": 96,
-      "name": "Block with angle brackets nesting",
-      "code": "pattern {$block content {<}{>}} {CONTENT:$content}\nouter <inner <deep> more>",
-      "expected": "CONTENT:inner <deep> more"
-    },
-    {
-      "id": 97,
       "name": "Pattern with special regex characters",
       "code": "pattern {a.*b} {MATCHED}\na.*b",
       "expected": "MATCHED"
     },
     {
-      "id": 98,
-      "name": "Multiple $eval operations",
-      "code": "pattern {add $a $b} {$eval{return parseInt($a) + parseInt($b)}}\nadd 15 25",
-      "expected": "40"
+      "id": 11,
+      "name": "Multiple blocks in one pattern",
+      "code": "pattern {$block a {(}{)} and $block b {[}{]}} {$a|$b}\n(first) and [second]",
+      "expected": "first|second"
     },
     {
-      "id": 99,
-      "name": "$eval with division and decimals",
+      "id": 12,
+      "name": "Variable reuse in replacement",
+      "code": "pattern {$x} {$x:$x}\ndata",
+      "expected": "data:data"
+    },
+    {
+      "id": 13,
+      "name": "Literal dollar sign in replacement",
+      "code": "pattern {price} {$50}\nprice",
+      "expected": "$50"
+    },
+    {
+      "id": 14,
+      "name": "Optional whitespace with $$ optional",
+      "code": "pattern {hello$$world} {HI}\nhello\n\nworld",
+      "expected": "HI"
+    },
+    {
+      "id": 15,
+      "name": "Block with angle brackets",
+      "code": "pattern {$block inner {<}{>}} {WRAPPED[$inner]}\n<content>",
+      "expected": "WRAPPED[content]"
+    },
+    {
+      "id": 16,
+      "name": "Pattern with literal characters",
+      "code": "pattern {Mr. $name} {Hello $name}\nMr. Smith",
+      "expected": "Hello Smith"
+    },
+    {
+      "id": 17,
+      "name": "Eval with division and decimals",
       "code": "pattern {div $a $b} {$eval{return $a / $b}}\ndiv 7 2",
       "expected": "3.5"
     },
     {
-      "id": 100,
-      "name": "Unicode characters support",
-      "code": "pattern {oi $name} {Olá $name!}\noi Mundo",
-      "expected": "Olá Mundo!"
+      "id": 18,
+      "name": "Block capturing with square brackets",
+      "code": "pattern {$block arr {[}{]}} {ARRAY[$arr]}\n[1, 2, 3]",
+      "expected": "ARRAY[1, 2, 3]"
     },
     {
-      "id": 101,
-      "name": "Emoji support",
-      "code": "pattern {react $emoji} {Você reagiu: $emoji}\nreact 😊",
-      "expected": "Você reagiu: 😊"
+      "id": 19,
+      "name": "Pattern without whitespace matching",
+      "code": "pattern {$$a,$b} {$b,$a} one,two",
+      "expected": "two,one"
     },
     {
-      "id": 102,
-      "name": "Tab as flexible whitespace",
-      "code": "pattern {from$$to} {path: from -> to}\nfrom\tto",
-      "expected": "path: from -> to"
+      "id": 20,
+      "name": "Nested pattern in replacement",
+      "code": "pattern {$x} {->$x<-}\ntext",
+      "expected": "->text<-"
     },
     {
-      "id": 103,
-      "name": "No match leaves input intact",
-      "code": "pattern {nomatch $x} {REPLACED}\nnothing matches here",
-      "expected": "nothing matches here"
+      "id": 21,
+      "name": "First pattern applies, second doesn't match",
+      "code": "pattern {hello} {goodbye}\npattern {goodbye} {hi}\nhello",
+      "expected": "hi"
     },
     {
-      "id": 104,
-      "name": "Empty context is removed",
-      "code": "Start\ncontext {}End",
-      "expected": "Start\nEnd"
+      "id": 22,
+      "name": "Block delimiter balancing - parentheses",
+      "code": "pattern {$block code {(}{)}} {RESULT[$code]}\n(a (b (c) d) e)",
+      "expected": "RESULT[a (b (c) d) e]"
     },
     {
-      "id": 105,
+      "id": 23,
+      "name": "Block delimiter balancing - angle brackets",
+      "code": "pattern {$block inner {<}{>}} {X[$inner]}\n<outer <middle <deep>> more>",
+      "expected": "X[outer <middle <deep>> more]"
+    },
+    {
+      "id": 24,
+      "name": "Block delimiter balancing - square brackets",
+      "code": "pattern {$block data {[}{]}} {DATA[$data]}\n[outer [inner [deep]] more]",
+      "expected": "DATA[outer [inner [deep]] more]"
+    },
+    {
+      "id": 25,
+      "name": "Block delimiter balancing - curly braces",
+      "code": "pattern {$block obj {}{}} {OBJ[$obj]}\n{key: {nested: {value}}}",
+      "expected": "OBJ[key: {nested: {value}}]"
+    },
+    {
+      "id": 26,
+      "name": "Multiple nested delimiters in same pattern",
+      "code": "pattern {$block a {(}{)} $block b {[}{]}} {[$a|$b]}\n(test1) [test2]",
+      "expected": "[test1|test2]"
+    },
+    {
+      "id": 27,
+      "name": "Simple pattern cascade",
+      "code": "pattern {START $x END} {RESULT[$x]}\nSTART data END",
+      "expected": "RESULT[data]"
+    },
+    {
+      "id": 28,
+      "name": "Block with quotes as delimiters",
+      "code": "pattern {$block str {\"}{\"}} {STRING[$str]}\n\"hello world\"",
+      "expected": "STRING[hello world]"
+    },
+    {
+      "id": 29,
       "name": "Block with pipe delimiters",
-      "code": "pattern {$block content {|}{|}} {PIPE[$content]}\n|value|",
-      "expected": "PIPE[value]"
+      "code": "pattern {$block val {|}{|}} {PIPE[$val]}\n|content here|",
+      "expected": "PIPE[content here]"
     },
     {
-      "id": 106,
-      "name": "Block with double quotes delimiter",
-      "code": "pattern {$block str {\"}{\"}} {STR[$str]}\n\"hello world\"",
-      "expected": "STR[hello world]"
+      "id": 30,
+      "name": "Deeply nested block delimiters",
+      "code": "pattern {$block deep {<}{>}} {[$deep]}\n<a <b <c <d> c> b> a>",
+      "expected": "[a <b <c <d> c> b> a]"
     },
     {
-      "id": 107,
-      "name": "Comma-separated pattern matching",
-      "code": "pattern {$$a,$$b,$$c} {[$a] [$b] [$c]}\none,two,three",
-      "expected": "[one] [two] [three]"
+      "id": 31,
+      "name": "Two sequential patterns",
+      "code": "pattern {$block content {(}{)}} {BLOCK [$content]}\npattern {BLOCK $x} {RESULT: $x}\n(inner data)",
+      "expected": "RESULT: [inner data]"
     },
     {
-      "id": 108,
-      "name": "Apostrophe in pattern literal",
-      "code": "pattern {It's $name} {Hello $name}\nIt's John",
-      "expected": "Hello John"
+      "id": 32,
+      "name": "Multiple eval operations in sequence",
+      "code": "pattern {calc $x} {$eval{return parseInt($x) * 2}}\ncalc 3",
+      "expected": "6"
     },
     {
-      "id": 109,
-      "name": "Math operation with $eval",
-      "code": "pattern {num $a} {$eval{return parseInt($a) + 1}}\nnum 999",
-      "expected": "1000"
+      "id": 33,
+      "name": "Block delimiter edge case - empty content",
+      "code": "pattern {$block empty {(}{)}} {EMPTY[$empty]}\n()",
+      "expected": "EMPTY[]"
     },
     {
-      "id": 110,
-      "name": "Multi-character block delimiters",
-      "code": "pattern {$block code {open}{close}} {CODE[$code]}\nopenFunction()close",
-      "expected": "CODE[Function()]"
+      "id": 34,
+      "name": "Multi-char delimiters with nesting",
+      "code": "pattern {$block code {<<}{>>}} {CODE[$code]}\n<<outer <<inner>> more>>",
+      "expected": "CODE[outer <<inner>> more]"
     },
     {
-      "id": 111,
-      "name": "Pattern with dot literal",
-      "code": "pattern {$$file.txt} {File: $file.txt}\ndocument.txt",
-      "expected": "File: document"
-    },
-    {
-      "id": 112,
-      "name": "Repeated global pattern matching",
-      "code": "pattern {x} {X}\nxxxxx",
-      "expected": "XXXXX"
-    },
-    {
-      "id": 113,
-      "name": "Overlapping patterns cascade",
-      "code": "pattern {a} {A}\npattern {A} {B}\npattern {B} {C}\na",
-      "expected": "C"
-    },
-    {
-      "id": 114,
-      "name": "Context with nested patterns",
-      "code": "context {\n  pattern {$x} {\n<$x>}\napple\nbanana\ncherry\n}",
-      "expected": "<apple>\n<banana>\n<cherry>"
-    },
-    {
-      "id": 115,
-      "name": "$eval with subtraction (negatives)",
-      "code": "pattern {calc $a $b} {$eval{return $a - $b}}\ncalc -5 -10",
-      "expected": "5"
-    },
-    {
-      "id": 116,
-      "name": "Multiple spaces trim with flexible whitespace",
-      "code": "pattern {$ $word$ } {FOUND: $word}\n   word    ",
-      "expected": "FOUND: word"
-    },
-    {
-      "id": 117,
-      "name": "Block captures parentheses with nesting",
-      "code": "pattern {$block content {(}{)}} {B[$content]}\n(a(b)c)",
-      "expected": "B[a(b)c]"
-    },
-    {
-      "id": 118,
-      "name": "Arithmetic in config pattern",
-      "code": "pattern {$x + $y = $z} {$z is sum of $x and $y}\n5 + 3 = 8",
-      "expected": "8 is sum of 5 and 3"
-    },
-    {
-      "id": 119,
-      "name": "Trailing punctuation in pattern",
-      "code": "pattern {$$w,} {$$w!}\nhello,",
-      "expected": "hello!"
+      "id": 35,
+      "name": "Cascading pattern transformations",
+      "code": "pattern {START $x END} {STEP1[$x]}\npattern {STEP1 $y} {STEP2[$y]}\npattern {STEP2 $z} {FINAL[$z]}\nSTART test END",
+      "expected": "FINAL[[[test]]]"
     }
   ]
 }

@@ -191,22 +191,13 @@ pattern {$x} {$eval<<parseInt($x)*2>>}
 ```
 Output: `10`
 
-### $match
-Full matched text from the pattern.
-```
-pattern {[$x]} {FOUND: $match}
-[data]
-```
-Output: `FOUND: [data]`
-
----
 
 ## Important Rules
 
 ### Matching
 * `$x` = one word (no whitespace)
 * `$$x` = captures text with optional surrounding whitespace
-* `$$$x` = optional whitespace variable (no error if empty)
+* `$$$x` = captures text with optional surrounding whitespace, can be empty or not found
 * Patterns apply globally until stable
 * Blocks support arbitrary nesting depth
 
@@ -239,13 +230,9 @@ pattern {$block data {<<}{>>}} {$data}
 
 ### In Eval
 ```
-pattern {$x} {$eval<<<return $x + 1>>>}
+// const p = new Papagaio('$', '<<<', '>>>');
+pattern <<<$x>>> <<<$eval<<<return $x + 1>>>>>>
 5
-```
-
-### In Patterns
-```
-$pattern {text} {result}
 ```
 
 ---
@@ -271,8 +258,7 @@ pattern {$$x $y} {$y, $x}          # whitespace-sensitive capture
 pattern {$$$x $y} {$y, $x}         # optional whitespace capture
 pattern {$block n {o}{c}} {$n}     # block capture with custom delimiters
 $pattern {a} {b}                   # subpattern (scoped to parent)
-$eval{code}                         # JavaScript evaluation
-$match                             # full matched text
+$eval{code}                        # JavaScript evaluation
 ```
 
 ---
