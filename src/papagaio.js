@@ -1,6 +1,7 @@
 function parsePattern(papagaio, pattern) {
     const tokens = []; let i = 0;
     const S = papagaio.symbols.sigil, S2 = S + S;
+    const blockKw = papagaio.symbols.block;
     while (i < pattern.length) {
         if (pattern.startsWith(S2 + S, i)) {
             let j = i + S2.length + S.length, varName = '';
@@ -13,8 +14,8 @@ function parsePattern(papagaio, pattern) {
             if (varName) { tokens.push({ type: 'var-ws', varName }); i = j; continue; }
             tokens.push({ type: 'whitespace-optional' }); i += S2.length; continue;
         }
-        if (pattern.startsWith(S + 'block', i)) {
-            let j = i + S.length + 'block'.length;
+        if (pattern.startsWith(S + blockKw, i)) {
+            let j = i + S.length + blockKw.length;
             while (j < pattern.length && /\s/.test(pattern[j])) j++;
             let varName = '';
             while (j < pattern.length && /[A-Za-z0-9_]/.test(pattern[j])) varName += pattern[j++];
@@ -134,7 +135,6 @@ function extractBlock(p, src, openPos, openDelim = p.symbols.open, closeDelim = 
 
 function collectPatterns(p, src) {
     const A = [];
-    // MUDANÇA: usar escapeRegex para suportar delimitadores multi-caractere
     const r = new RegExp(`(?:^|\\b)${escapeRegex(p.symbols.pattern)}\\s*${escapeRegex(p.symbols.open)}`, "g");
     let out = src;
     
@@ -155,7 +155,6 @@ function collectPatterns(p, src) {
 
 function extractNestedPatterns(p, replaceText) {
     const nested = [];
-    // MUDANÇA: usar escapeRegex para suportar delimitadores multi-caractere
     const r = new RegExp(`${escapeRegex(p.symbols.sigil)}${escapeRegex(p.symbols.pattern)}\\s*${escapeRegex(p.symbols.open)}`, "g");
     let out = replaceText;
 
@@ -187,31 +186,26 @@ function extractEvalExpressions(p, text) {
     const S = p.symbols.sigil;
     const O = p.symbols.open;
     const C = p.symbols.close;
-    const evalKeyword = 'eval';
+    const evalKeyword = p.symbols.eval;
 
     let i = 0;
     let out = text;
     let offset = 0;
 
     while (i < text.length) {
-        // Procura por $eval seguido de delimitador de abertura
         if (text.substring(i, i + S.length) === S &&
             text.substring(i + S.length, i + S.length + evalKeyword.length) === evalKeyword) {
 
             let j = i + S.length + evalKeyword.length;
 
-            // Pula espaços em branco
             while (j < text.length && /\s/.test(text[j])) j++;
 
-            // Verifica se tem o delimitador de abertura (já suporta multi-caractere)
             if (j < text.length && text.substring(j, j + O.length) === O) {
                 const startPos = i;
                 const blockStart = j;
 
-                // Extrai o bloco usando os delimitadores configurados
                 const [content, endPos] = extractBlock(p, text, blockStart, O, C);
 
-                // Adiciona à lista de evals
                 evals.push({
                     fullMatch: text.substring(startPos, endPos),
                     code: content,
@@ -219,7 +213,6 @@ function extractEvalExpressions(p, text) {
                     endPos: endPos - offset
                 });
 
-                // Remove do texto de saída
                 const before = out.substring(0, startPos - offset);
                 const after = out.substring(endPos - offset);
                 const placeholder = `__EVAL_${evals.length - 1}__`;
@@ -261,7 +254,6 @@ function applyPatterns(p, src, pats) {
                 ok = true; const { captures, endPos } = m;
                 let r = pat.replace;
 
-                // Extrai e processa padrões aninhados ($pattern)
                 const [nestedPats, cleanReplace] = extractNestedPatterns(p, r);
                 r = cleanReplace;
 
@@ -273,7 +265,6 @@ function applyPatterns(p, src, pats) {
 
                 p.match = src.slice(pos, endPos);
 
-                // Extrai e processa $eval usando os delimitadores configurados
                 const [evals, cleanText] = extractEvalExpressions(p, r);
                 if (evals.length > 0) {
                     r = applyEvalExpressions(p, cleanText, evals);
@@ -301,15 +292,21 @@ function unescapeDelimiter(s) {
 }
 
 export class Papagaio {
-    constructor(sigil = '$', open = '{', close = '}', pattern = 'pattern') {
+    constructor(sigil = '$', open = '{', close = '}', pattern = 'pattern', evalKeyword = 'eval', blockKeyword = 'block') {
         this.recursion_limit = 512;
-        this.symbols = { pattern: pattern, open: open, close: close, sigil: sigil };
+        this.symbols = { 
+            pattern: pattern, 
+            open: open, 
+            close: close, 
+            sigil: sigil,
+            eval: evalKeyword,
+            block: blockKeyword
+        };
         this.content = "";
     }
     process(input) {
         this.content = input; let src = input, last = null, it = 0;
         const pend = () => {
-            // MUDANÇA: usar escapeRegex para suportar delimitadores multi-caractere
             const r2 = new RegExp(`(?:^|\\b)${escapeRegex(this.symbols.pattern)}\\s*${escapeRegex(this.symbols.open)}`, "g");
             return r2.test(src);
         };
