@@ -260,6 +260,11 @@ export class Papagaio {
             src = applyPats(this, s2, p);
             if (!pending()) break;
         }
-        return this.content = src, src;
+        this.content = src;
+        if (typeof this.exit == "function")
+        {
+            this.exit();
+        }
+        return this.content;
     }
 }

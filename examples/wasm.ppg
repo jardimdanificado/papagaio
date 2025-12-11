@@ -1,0 +1,67 @@
+pattern{eval $block code{(}{)}} {
+    $eval {
+        $code;
+        return "";
+    }
+}
+
+// remove comments
+pattern {// $comment $regex newline{[^\n]*}} {}
+
+eval(
+    papagaio.exit = function()
+    {
+        papagaio.content = "(module\n" + papagaio.content + "\n)";
+        papagaio.exit = null;
+    }
+)
+
+pattern {export function $name $block params{(}{)}:$rets $block content{}{}} {
+    pattern {parametrize_$name}
+    {
+        $eval {
+            let str = "$params".replace("(", "").replace(")", "");
+            let params = str.split(",");
+            let new_stuff = "";
+            for (const param of params) {
+                const [name, type] = param.split(":");
+                new_stuff += ` (param $${name.trim()} ${type.trim()}) `;
+            }
+            return new_stuff;
+        }
+    }
+
+    (func (export "$name") parametrize_$name (result $rets)
+        $content
+    )
+}
+
+pattern {function $name $block params{(}{)}:$rets $block content{}{}} {
+    pattern {parametrize_$name}
+    {
+        $eval {
+            let str = "$params".replace("(", "").replace(")", "");
+            let params = str.split(",");
+            let new_stuff = "";
+            for (const param of params) {
+                const [name, type] = param.split(":");
+                new_stuff += ` (param $${name.trim()} ${type.trim()}) `;
+            }
+            return new_stuff;
+        }
+    }
+
+    (func $$name parametrize_$name (result $rets)
+        $content
+    )
+}
+
+function name(a:i32, b:i32):i64 i64
+{
+contentnans
+}
+
+export function funcao_exportada(a:f32, b:f32, c:f32):i64 i64 i64 i64
+{
+    fução expoortada1
+}
