@@ -4,19 +4,22 @@ Minimal yet powerful text preprocessor with support for multi-character delimite
 ## Installation
 ```javascript
 import { Papagaio } from './src/papagaio.js';
-const p = new Papagaio();
-const result = p.process(input);
+const papagaio = new Papagaio();
+const result = papagaio.process(input);
 ```
 
 ## Configuration
 ```javascript
-p.symbols = {
+papagaio.symbols = {
   pattern: "pattern",      // pattern keyword
   open: "{",               // opening delimiter (multi-char supported)
   close: "}",              // closing delimiter (multi-char supported)
-  sigil: "$"               // variable marker
+  sigil: "$",              // variable marker
+  eval: "eval",            // eval keyword
+  block: "block",          // block keyword
+  regex: "regex"           // regex keyword
 };
-p.recursion_limit = 512;
+papagaio.recursion_limit = 512;
 ```
 
 ---
@@ -39,33 +42,85 @@ Output: `cherry, banana, apple`
 
 ---
 
-## Whitespace Operators
+## Variables
 
-Papagaio provides flexible whitespace handling for variable capture.
+Papagaio provides flexible variable capture with automatic context-aware behavior.
 
-### `$x` - Single Word Variable
-Captures a single non-whitespace token.
+### `$x` - Smart Variable
+Automatically adapts based on context:
+- **Before a block**: Captures everything until the block's opening delimiter
+- **Before a literal**: Captures everything until that literal appears
+- **Otherwise**: Captures a single word (non-whitespace token)
+
 ```
 pattern {$x} {[$x]}
 hello world
 ```
 Output: `[hello]`
 
-### `$$x` - Whitespace-Sensitive Variable
-Captures text including surrounding whitespace until the next significant token.
 ```
-pattern {$$x world} {[$x]}
-hello   world
+pattern {$name $block content {(}{)}} {$name: $content}
+greeting (hello world)
 ```
-Output: `[hello  ]`
+Output: `greeting: hello world`
 
-### `$$$x` - Optional Whitespace Variable
-Captures with optional whitespace (no error if empty).
 ```
-pattern {$$$x world} {<$x>}
+pattern {$prefix:$suffix} {$suffix-$prefix}
+key:value
+```
+Output: `value-key`
+
+### `$x?` - Optional Variable
+Same behavior as `$x`, but won't fail if empty or not found.
+
+```
+pattern {$x? world} {<$x>}
 world
 ```
 Output: `<>`
+
+```
+pattern {$greeting? $name} {Hello $name$greeting}
+Hi John
+```
+Output: `Hello JohnHi`
+
+---
+
+## Regex Matching
+
+Capture content using JavaScript regular expressions.
+
+### Syntax
+```
+$regex varName {pattern}
+```
+
+### Basic Example
+```
+pattern {$regex num {[0-9]+}} {Number: $num}
+The answer is 42
+```
+Output: `Number: 42`
+
+### Complex Patterns
+```
+pattern {$regex email {\w+@\w+\.\w+}} {Email found: $email}
+Contact: user@example.com
+```
+Output: `Email found: user@example.com`
+
+### Multiple Regex Variables
+```
+pattern {$regex year {[0-9]{4}}-$regex month {[0-9]{2}}} {Month $month in $year}
+2024-03
+```
+Output: `Month 03 in 2024`
+
+### Notes
+- Regex patterns are cached for performance
+- Matches are anchored at the current position (no searching ahead)
+- Invalid regex patterns will cause the match to fail gracefully
 
 ---
 
@@ -191,13 +246,14 @@ pattern {$x} {$eval<<parseInt($x)*2>>}
 ```
 Output: `10`
 
+---
 
 ## Important Rules
 
-### Matching
-* `$x` = one word (no whitespace)
-* `$$x` = captures text with optional surrounding whitespace
-* `$$$x` = captures text with optional surrounding whitespace, can be empty or not found
+### Variable Matching
+* `$x` = smart capture (context-aware: word, until literal, or until block)
+* `$x?` = optional version of `$x` (won't fail if empty)
+* `$regex name {pattern}` = regex-based capture
 * Patterns apply globally until stable
 * Blocks support arbitrary nesting depth
 
@@ -207,7 +263,6 @@ Output: `10`
 * Multi-character delimiters fully supported (e.g., `{>>>}{<<<}`)
 
 ### Whitespace Handling
-* Whitespace-optional tokens (`$$` alone) skip optional whitespace
 * Variables automatically skip leading whitespace when needed
 * Trailing whitespace is trimmed when variables appear before literals
 
@@ -241,12 +296,13 @@ pattern <<<$x>>> <<<$eval<<<return $x + 1>>>>>>
 
 | Problem | Solution |
 |---------|----------|
-| Variable not captured | Check spacing and use appropriate whitespace operator (`$x`, `$$x`, `$$$x`) |
+| Variable not captured | Check context: use `$x?` for optional, or verify literals/blocks exist |
 | Block mismatch | Verify opening and closing delimiters match the declaration |
 | Infinite recursion | Reduce `recursion_limit` or simplify pattern dependencies |
-| Pattern not matching | Add whitespace operators (`$$`) for multi-word content |
+| Pattern not matching | Verify whitespace between tokens, check if variable should be optional |
 | Nested blocks fail | Ensure delimiters are properly balanced |
 | Multi-char delimiters broken | Check delimiters don't conflict; use escaping if needed |
+| Regex not matching | Test regex pattern separately; ensure it matches at the exact position |
 
 ---
 
@@ -254,8 +310,8 @@ pattern <<<$x>>> <<<$eval<<<return $x + 1>>>>>>
 
 ```
 pattern {$x $y} {$y, $x}           # basic pattern with variables
-pattern {$$x $y} {$y, $x}          # whitespace-sensitive capture
-pattern {$$$x $y} {$y, $x}         # optional whitespace capture
+pattern {$x? $y} {$y, $x}          # optional variable
+pattern {$regex n {[0-9]+}} {$n}   # regex capture
 pattern {$block n {o}{c}} {$n}     # block capture with custom delimiters
 $pattern {a} {b}                   # subpattern (scoped to parent)
 $eval{code}                        # JavaScript evaluation
@@ -267,5 +323,6 @@ $eval{code}                        # JavaScript evaluation
 
 * Patterns apply recursively until no changes occur (up to `recursion_limit`)
 * Multi-character delimiter matching is optimized with regex escaping
+* Regex patterns are automatically cached to improve performance
 * Nested blocks and subpatterns have no theoretical depth limit
 * Large recursion limits can impact performance on complex inputs
