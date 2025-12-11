@@ -42,7 +42,13 @@ function parsePattern(p, pat) {
         if (pat[i] === S) {
             let j = i + S.length, v = '';
             while (j < pat.length && /[A-Za-z0-9_]/.test(pat[j])) v += pat[j++];
-            if (v) { t.push({ type: 'var', varName: v }); i = j; continue; }
+            if (v) { 
+                const optional = pat[j] === '?';
+                if (optional) j++;
+                t.push({ type: 'var', varName: v, optional }); 
+                i = j; 
+                continue; 
+            }
             t.push({ type: 'lit', value: S }); i += S.length; continue;
         }
         if (/\s/.test(pat[i])) {
@@ -64,7 +70,12 @@ function matchPattern(p, src, tokens, pos = 0) {
         if (tok.type === 'lit') { if (!src.startsWith(tok.value, pos)) return null; pos += tok.value.length; continue; }
         if (tok.type === 'regex') {
             try {
-                const m = src.slice(pos).match(new RegExp(tok.regex));
+                let regex = p._regexCache.get(tok.regex);
+                if (!regex) {
+                    regex = new RegExp(tok.regex);
+                    p._regexCache.set(tok.regex, regex);
+                }
+                const m = src.slice(pos).match(regex);
                 if (!m || m.index !== 0) return null;
                 cap[p.symbols.sigil + tok.varName] = m[0];
                 pos += m[0].length;
@@ -84,7 +95,7 @@ function matchPattern(p, src, tokens, pos = 0) {
             } else {
                 while (pos < src.length && !/\s/.test(src[pos])) v += src[pos++];
             }
-            if (!v) return null;
+            if (!v && !tok.optional) return null;
             cap[p.symbols.sigil + tok.varName] = v;
             continue;
         }
@@ -237,6 +248,7 @@ export class Papagaio {
         this.symbols = { pattern, open, close, sigil, eval: evalKeyword, block: blockKeyword, regex: regexKeyword };
         this.content = "";
         this.match = "";
+        this._regexCache = new Map();
     }
     process(input) {
         this.content = input; 
