@@ -13,7 +13,24 @@
     </p>
     <hr>
     <div>
-        <label for="sketchSelect">Current Sketch:</label>
+        <label><strong>Configuration:</strong></label>
+        <label>Sigil: <input type="text" id="sigil" value="$" maxlength="5" style="width: 60px; font-family: monospace;"></label>
+        <label>Open: <input type="text" id="open" value="{" maxlength="5" style="width: 60px; font-family: monospace;"></label>
+        <label>Close: <input type="text" id="close" value="}" maxlength="5" style="width: 60px; font-family: monospace;"></label>
+        <label>Local: <input type="text" id="local" value="local" maxlength="10" style="width: 70px; font-family: monospace;"></label>
+        <label>Global: <input type="text" id="global" value="global" maxlength="10" style="width: 70px; font-family: monospace;"></label>
+        <label>Eval: <input type="text" id="eval" value="eval" maxlength="10" style="width: 70px; font-family: monospace;"></label>
+        <label>Block: <input type="text" id="block" value="block" maxlength="10" style="width: 70px; font-family: monospace;"></label>
+        <label>Regex: <input type="text" id="regex" value="regex" maxlength="10" style="width: 70px; font-family: monospace;"></label>
+        <button onclick="updateConfig()">Apply</button>
+        <button onclick="resetConfig()">Reset</button>
+    </div>
+    <hr>
+    <div>
+        <strong>
+            <label for="sketchSelect">Current Sketch:</label>
+        </strong>
+
         <select id="sketchSelect" onchange="switchSketch()">
             <option value="">-- Select Sketch --</option>
         </select>
@@ -24,7 +41,9 @@
     </div>
     <hr>
     <div>
+        <strong>
         <label for="sketchSelect">Sketches:</label>
+        </strong>
         <button onclick="exportSketches()">Export</button>
         <input type="file" id="importFileInput" onchange="importSketches(this.files[0])" accept=".json">
     </div>
@@ -139,7 +158,72 @@
             sketchesManager = new SketchesManager();
             loadOrCreateDefaultSketch();
             populateSketchSelect();
+            loadConfig();
         });
+
+        function loadConfig() {
+            try {
+                const saved = localStorage.getItem('papagaio_config');
+                if (saved) {
+                    const config = JSON.parse(saved);
+                    document.getElementById('sigil').value = config.sigil || '$';
+                    document.getElementById('open').value = config.open || '{';
+                    document.getElementById('close').value = config.close || '}';
+                    document.getElementById('local').value = config.local || 'local';
+                    document.getElementById('global').value = config.global || 'global';
+                    document.getElementById('eval').value = config.eval || 'eval';
+                    document.getElementById('block').value = config.block || 'block';
+                    document.getElementById('regex').value = config.regex || 'regex';
+                    updateConfig();
+                }
+            } catch {}
+        }
+
+        function saveConfig(config) {
+            try {
+                localStorage.setItem('papagaio_config', JSON.stringify(config));
+            } catch {}
+        }
+
+        function updateConfig() {
+            const sigil = document.getElementById('sigil').value || '$';
+            const open = document.getElementById('open').value || '{';
+            const close = document.getElementById('close').value || '}';
+            const local = document.getElementById('local').value || 'local';
+            const global = document.getElementById('global').value || 'global';
+            const evalKw = document.getElementById('eval').value || 'eval';
+            const block = document.getElementById('block').value || 'block';
+            const regex = document.getElementById('regex').value || 'regex';
+            
+            if (!sigil || !open || !close || !local || !global || !evalKw || !block || !regex) {
+                alert('All configuration fields are required');
+                return;
+            }
+            
+            // Salva os padrões globais atuais
+            const globalPatterns = [...processor.globalPatterns];
+            
+            // Cria nova instância com nova configuração
+            processor = new Papagaio(sigil, open, close, local, global, evalKw, block, regex);
+            
+            // Restaura os padrões globais
+            processor.globalPatterns = globalPatterns;
+            
+            // Salva configuração
+            saveConfig({ sigil, open, close, local, global, eval: evalKw, block, regex });
+        }
+
+        function resetConfig() {
+            document.getElementById('sigil').value = '$';
+            document.getElementById('open').value = '{';
+            document.getElementById('close').value = '}';
+            document.getElementById('local').value = 'local';
+            document.getElementById('global').value = 'global';
+            document.getElementById('eval').value = 'eval';
+            document.getElementById('block').value = 'block';
+            document.getElementById('regex').value = 'regex';
+            updateConfig();
+        }
 
         function loadOrCreateDefaultSketch() {
             let sketch = null;
@@ -270,7 +354,8 @@
         function exportSketches() {
             const data = {
                 papagaio_sketches: localStorage.getItem('papagaio_sketches'),
-                papagaio_current_sketch: localStorage.getItem('papagaio_current_sketch')
+                papagaio_current_sketch: localStorage.getItem('papagaio_current_sketch'),
+                papagaio_config: localStorage.getItem('papagaio_config')
             };
 
             const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -297,6 +382,9 @@
                     if (data.papagaio_current_sketch) {
                         localStorage.setItem('papagaio_current_sketch', data.papagaio_current_sketch);
                     }
+                    if (data.papagaio_config) {
+                        localStorage.setItem('papagaio_config', data.papagaio_config);
+                    }
                     location.reload();
                 } catch (err) {
                     alert('Error importing file: ' + err.message);
@@ -317,6 +405,8 @@
         window.deleteCurrentSketch = deleteCurrentSketch;
         window.exportSketches = exportSketches;
         window.importSketches = importSketches;
+        window.updateConfig = updateConfig;
+        window.resetConfig = resetConfig;
     </script>
 </body>
 </html>
