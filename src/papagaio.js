@@ -73,17 +73,17 @@ function matchPattern(p, src, tok, pos = 0) {
                 if (!m || m.index !== 0) return null;
                 cap[p.symbols.sigil + t.varName] = m[0];
                 pos += m[0].length;
-            } catch { return null; }
+            } catch (e) { return null; }
             continue;
         }
         if (t.type === 'var') {
             while (pos < src.length && /\s/.test(src[pos])) pos++;
             const nx = findNext(tok, ti);
             let v = '';
-            if (nx?.type === 'block') {
+            if (nx && nx.type === 'block') {
                 while (pos < src.length && !src.startsWith(nx.open, pos) && src[pos] !== '\n') v += src[pos++];
                 v = v.trimEnd();
-            } else if (nx?.type === 'lit') {
+            } else if (nx && nx.type === 'lit') {
                 while (pos < src.length && !src.startsWith(nx.value, pos) && src[pos] !== '\n') v += src[pos++];
                 v = v.trimEnd();
             } else {
@@ -193,9 +193,9 @@ function applyPats(p, src, pats) {
                 let r = pat.r;
                 const [loc, cln] = extractNested(p, r);
                 r = cln;
-                for (const [k, v] of Object.entries(m.captures)) {
-                    r = r.replace(new RegExp(esc(k) + '(?![A-Za-z0-9_])', 'g'), v);
-                }
+                Object.keys(m.captures).forEach(k => {
+                    r = r.replace(new RegExp(esc(k) + '(?![A-Za-z0-9_])', 'g'), m.captures[k]);
+                });
                 if (loc.length) r = applyPats(p, r, loc);
                 p.match = src.slice(pos, m.endPos);
                 const [ev, ct] = extractEvals(p, r);
@@ -232,9 +232,9 @@ export class Papagaio {
             this.content = proc;
             return proc;
         }
-        let src = proc, last = null, it = 0;
+        let src = proc, last = null;
         while (src !== last) {
-            it++; last = src;
+            last = src;
             src = applyPats(this, src, loc);
             const [nested] = extractNested(this, src);
             if (nested.length === 0) break;

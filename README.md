@@ -1,5 +1,15 @@
 # Papagaio
-Minimal yet powerful text preprocessor with support for multi-character delimiters and scoped patterns.
+Minimal yet powerful text preprocessor.
+
+- **It's portable!** papagaio requires only ES6 and nothing else.
+- **It's small!** papagaio is around ~250 lines and ~10kb.
+- **It's easy!** papagaio doesnt have any complicated stuff, 1 class and 1 method for doing everything!
+- **It's flexible!** papagaio sigil and delimiters conflict with whatever you want to process? then simply change it! papagaio allow us to modify ANY of its keywords and symbols.
+- **It's powerful!!** aside been inspired by the m4 preprocessor and meant to be a preprocessor, papagaio still a fully-featured programming language because it can evaluate any valid javascript code using $eval;
+
+Papagaio born as a generic text preprocessor inspired in m4 and the c preprocessor, it was just a unamed script part of my minimal language `rap`, which i used to generate code for my minimal vm `urb`, eventually it not only replaced m4 and cpp in rap but replaced rap itself too, currently papagaio can effortlessly implement both urb and rap during runtime.
+
+Papagaio can be used as a fully-featured programming language, but i prefer calling a "pattern-oriented text processing language" or a preprocessor by short.
 
 ## Installation
 ```javascript
