@@ -1,8 +1,6 @@
 # Papagaio
 Minimal yet powerful text preprocessor with support for multi-character delimiters and scoped patterns.
 
-***PAPAGAIO IS CURRENTLY IN HEAVY DEVELOPMENT AND EXPERIMENTATION***
-
 ## Installation
 ```javascript
 import { Papagaio } from './src/papagaio.js';
@@ -482,3 +480,5 @@ new Papagaio(sigil, open, close, local, global, evalKw, blockKw, regexKw)
 * Nested blocks and patterns have no theoretical depth limit
 * Large recursion limits can impact performance on complex inputs
 * Each `process()` call evaluates local patterns first, then global patterns
+
+***PAPAGAIO IS CURRENTLY IN HEAVY DEVELOPMENT AND EXPERIMENTATION PHASE***

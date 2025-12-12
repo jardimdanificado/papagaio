@@ -1,3 +1,5 @@
+// papagaio - https://github.com/jardimdanificado/papagaio
+// do whatever you want as long you give me the credits...
 function parsePattern(p, pat) {
     const t = [], S = p.symbols.sigil, O = p.symbols.open;
     let i = 0;

@@ -1,13 +1,15 @@
+// generic ts-like to wasm compiler
 
-// remove comments
 $local {// $comment $regex newline{[^\n]*}} {}
 $local {$regex spaces{\s\s}}{ }
+
 $eval{
     papagaio.exit = function()
     {
         papagaio.content = "(module\n" + papagaio.content + "\n)";
         papagaio.exit = null;
-    }
+    };
+    return ""
 }
 
 $local {export function $name $block params{(}{)}:$rets $block content{}{}} {
@@ -58,7 +60,7 @@ $local {function $name $block params{(}{)}:$rets $block content{}{}} {
 
 function name(a:i32, b:i32):i64 i64
 {
-contentnans
+    contentnans
 }
 
 export function funcao_exportada(a:f32, b:f32, c:f32):i64 i64 i64 i64
