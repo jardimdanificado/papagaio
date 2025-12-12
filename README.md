@@ -11,8 +11,7 @@ const result = papagaio.process(input);
 ## Configuration
 ```javascript
 papagaio.symbols = {
-  local: "local",          // local pattern keyword
-  global: "global",        // global pattern keyword
+  pattern: "pattern",      // pattern keyword
   open: "{",               // opening delimiter (multi-char supported)
   close: "}",              // closing delimiter (multi-char supported)
   sigil: "$",              // variable marker
@@ -20,7 +19,6 @@ papagaio.symbols = {
   block: "block",          // block keyword
   regex: "regex"           // regex keyword
 };
-papagaio.recursion_limit = 512;
 ```
 
 ---
@@ -29,14 +27,14 @@ papagaio.recursion_limit = 512;
 
 ### 1. Simple Variables
 ```
-$local {$x} {$x}
+$pattern {$x} {$x}
 hello
 ```
 Output: `hello`
 
 ### 2. Multiple Variables
 ```
-$local {$x $y $z} {$z, $y, $x}
+$pattern {$x $y $z} {$z, $y, $x}
 apple banana cherry
 ```
 Output: `cherry, banana, apple`
@@ -54,19 +52,19 @@ Automatically adapts based on context:
 - **Otherwise**: Captures a single word (non-whitespace token)
 
 ```
-$local {$x} {[$x]}
+$pattern {$x} {[$x]}
 hello world
 ```
 Output: `[hello]`
 
 ```
-$local {$name $block content {(}{)}} {$name: $content}
+$pattern {$name $block content {(}{)}} {$name: $content}
 greeting (hello world)
 ```
 Output: `greeting: hello world`
 
 ```
-$local {$prefix:$suffix} {$suffix-$prefix}
+$pattern {$prefix:$suffix} {$suffix-$prefix}
 key:value
 ```
 Output: `value-key`
@@ -75,13 +73,13 @@ Output: `value-key`
 Same behavior as `$x`, but won't fail if empty or not found.
 
 ```
-$local {$x? world} {<$x>}
+$pattern {$x? world} {<$x>}
 world
 ```
 Output: `<>`
 
 ```
-$local {$greeting? $name} {Hello $name$greeting}
+$pattern {$greeting? $name} {Hello $name$greeting}
 Hi John
 ```
 Output: `Hello JohnHi`
@@ -99,21 +97,21 @@ $regex varName {pattern}
 
 ### Basic Example
 ```
-$local {$regex num {[0-9]+}} {Number: $num}
+$pattern {$regex num {[0-9]+}} {Number: $num}
 The answer is 42
 ```
 Output: `Number: 42`
 
 ### Complex Patterns
 ```
-$local {$regex email {\w+@\w+\.\w+}} {Email found: $email}
+$pattern {$regex email {\w+@\w+\.\w+}} {Email found: $email}
 Contact: user@example.com
 ```
 Output: `Email found: user@example.com`
 
 ### Multiple Regex Variables
 ```
-$local {$regex year {[0-9]{4}}-$regex month {[0-9]{2}}} {Month $month in $year}
+$pattern {$regex year {[0-9]{4}}-$regex month {[0-9]{2}}} {Month $month in $year}
 2024-03
 ```
 Output: `Month 03 in 2024`
@@ -136,21 +134,21 @@ $block varName {open}{close}
 
 ### Basic Example
 ```
-$local {$name $block content {(}{)}} {[$content]}
+$pattern {$name $block content {(}{)}} {[$content]}
 data (hello world)
 ```
 Output: `[hello world]`
 
 ### Custom Delimiters
 ```
-$local {$block data {<<}{>>}} {DATA: $data}
+$pattern {$block data {<<}{>>}} {DATA: $data}
 <<json stuff>>
 ```
 Output: `DATA: json stuff`
 
 ### Multi-Character Delimiters
 ```
-$local {$block code {```}{```}} {<pre>$code</pre>}
+$pattern {$block code {```}{```}} {<pre>$code</pre>}
 ```markdown
 # Title
 ```
@@ -158,14 +156,14 @@ Output: `<pre># Title</pre>`
 
 ### Multiple Blocks
 ```
-$local {$block a {(}{)}, $block b {[}{]}} {$a|$b}
+$pattern {$block a {(}{)}, $block b {[}{]}} {$a|$b}
 (first), [second]
 ```
 Output: `first|second`
 
 ### Nested Blocks
 ```
-$local {$block outer {(}{)}} {[$outer]}
+$pattern {$block outer {(}{)}} {[$outer]}
 (outer (inner))
 ```
 Output: `[outer (inner)]`
@@ -174,108 +172,67 @@ Output: `[outer (inner)]`
 
 ## Pattern Scopes
 
-Papagaio supports two types of pattern scopes: **local** and **global**.
+Patterns defined within a replacement body create nested scopes with hierarchical inheritance.
 
-### `$local` - Local Patterns
-Patterns that exist only within the current processing context. They are discarded after the parent pattern completes.
-
+### Basic Pattern
 ```
-$local {hello} {world}
+$pattern {hello} {world}
 hello
 ```
 Output: `world`
 
 **Key Properties:**
-* Exists only during the current `process()` call
-* Does not persist between calls
-* Perfect for temporary transformations
-* Does not pollute the global pattern namespace
+* Patterns are scoped to their context
+* Child patterns inherit parent patterns
+* Patterns do not persist between `process()` calls
+* Perfect for hierarchical transformations
 
-### `$global` - Global Patterns
-Patterns that persist across multiple `process()` calls and are available everywhere.
-
+### Nested Patterns with Inheritance
 ```
-$global {hello} {world}
-```
-
-Once defined, this pattern remains active:
-```javascript
-const p = new Papagaio();
-p.process('$global{hello}{world}');
-p.process('hello'); // Output: "world"
-p.process('Say hello'); // Output: "Say world"
-```
-
-**Key Properties:**
-* Persists across `process()` calls
-* Available to all subsequent transformations
-* Stored in `papagaio.globalPatterns`
-* Can be redefined or extended at any time
-
-### Combining Local and Global
-
-```
-$global {greeting} {Hello}
-
-$local {$name} {greeting $name!}
-World
-```
-
-First call output: `Hello World!`
-
-```
-User
-```
-
-Second call output: `Hello User!` (global pattern still active)
-
----
-
-## Nested Patterns
-
-Patterns declared inside replacement bodies can be either local or global.
-
-### Local Nested Pattern
-```
-$local {transform $x} {
-  $local {$x} {[$x]}
-  $x $x $x
+$pattern {outer $x} {
+  $pattern {inner $y} {[$y from $x]}
+  inner $x
 }
-transform hello
+outer hello
 ```
-Output: `[hello] [hello] [hello]`
+Output: `[hello from hello]`
 
-### Global Nested Pattern
-```
-$local {setup} {
-  $global {x} {expanded_x}
-  Setup complete
-}
-setup
-x
-```
-Output: 
-```
-Setup complete
-expanded_x
-```
+The inner pattern has access to `$x` from the outer pattern's capture.
 
-### Mixed Scopes
+### Deep Nesting
 ```
-$local {init} {
-  $local {temp} {temporary}
-  $global {perm} {permanent}
-  temp perm
+$pattern {level1 $a} {
+  $pattern {level2 $b} {
+    $pattern {level3 $c} {$a > $b > $c}
+    level3 $b
+  }
+  level2 $a
 }
-init
-temp perm
+level1 ROOT
+```
+Output: `ROOT > ROOT > ROOT`
+
+Each nested level inherits all patterns from parent scopes.
+
+### Sibling Scopes Don't Share
+```
+$pattern {branch1} {
+  $pattern {x} {A}
+  x
+}
+$pattern {branch2} {
+  x
+}
+branch1
+branch2
 ```
 Output:
 ```
-temporary permanent
-permanent perm
+A
+x
 ```
-(Note: `temp` is not available in the second line)
+
+Patterns in `branch1` are not available in `branch2` (they are siblings, not parent-child).
 
 ---
 
@@ -285,22 +242,22 @@ permanent perm
 Executes JavaScript code with access to the Papagaio instance.
 
 ```
-$local {$x} {$eval{return parseInt($x)*2;}}
+$pattern {$x} {$eval{return parseInt($x)*2;}}
 5
 ```
 Output: `10`
 
 **Accessing Papagaio Instance:**
 ```
-$local {info} {$eval{
-  return `Globals: ${papagaio.globalPatterns.length}`;
+$pattern {info} {$eval{
+  return `Content length: ${papagaio.content.length}`;
 }}
 info
 ```
 
 **Multi-character delimiters:**
 ```
-$local {$x} {$eval<<parseInt($x)*2>>}
+$pattern {$x} {$eval<<parseInt($x)*2>>}
 5
 ```
 Output: `10`
@@ -317,10 +274,9 @@ Output: `10`
 * Trailing whitespace is trimmed when variables appear before literals
 
 ### Pattern Matching
-* `$local {match} {replace}` = pattern scoped to current context
-* `$global {match} {replace}` = pattern that persists across calls
-* Patterns apply recursively until stable (up to `recursion_limit`)
-* Global patterns are always applied after local patterns
+* `$pattern {match} {replace}` = pattern scoped to current context
+* Patterns inherit from parent scopes hierarchically
+* Each `process()` call starts with a clean slate (no persistence)
 
 ### Block Matching
 * `$block name {open}{close}` captures delimited regions
@@ -341,21 +297,21 @@ const p = new Papagaio('$', '<<<', '>>>');
 
 ### In Patterns
 ```
-$local<<<$x>>> <<<[$x]>>>
+$pattern<<<$x>>> <<<[$x]>>>
 hello
 ```
 Output: `[hello]`
 
 ### In Blocks
 ```
-$local<<<$block data {<<}{>>}>>> <<<$data>>>
+$pattern<<<$block data {<<}{>>}>>> <<<$data>>>
 <<content>>
 ```
 Output: `content`
 
 ### In Eval
 ```
-$local<<<$x>>> <<<$eval<<<return $x + 1>>>>>>
+$pattern<<<$x>>> <<<$eval<<<return $x + 1>>>>>>
 5
 ```
 Output: `6`
@@ -367,49 +323,87 @@ Output: `6`
 ### Markdown-like Processor
 ```javascript
 const p = new Papagaio();
-p.process(`
-$global {# $title} {<h1>$title</h1>}
-$global {## $title} {<h2>$title</h2>}
-$global {**$text**} {<strong>$text</strong>}
-`);
+const template = `
+$pattern {# $title} {<h1>$title</h1>}
+$pattern {## $title} {<h2>$title</h2>}
+$pattern {**$text**} {<strong>$text</strong>}
 
-p.process('# Hello World');      // <h1>Hello World</h1>
-p.process('## Subtitle');         // <h2>Subtitle</h2>
-p.process('**bold text**');       // <strong>bold text</strong>
+# Hello World
+## Subtitle
+**bold text**
+`;
+
+p.process(template);
+// Output:
+// <h1>Hello World</h1>
+// <h2>Subtitle</h2>
+// <strong>bold text</strong>
 ```
 
-### Template System
+### Template System with State
 ```javascript
 const p = new Papagaio();
-p.process(`
-$global {var $name = $value} {$eval{
-  papagaio.vars = papagaio.vars || {};
+p.vars = {}; // Custom property for storing variables
+
+const template = `
+$pattern {var $name = $value} {$eval{
   papagaio.vars['$name'] = '$value';
   return '';
 }}
-$global {get $name} {$eval{
-  return papagaio.vars?.['$name'] || 'undefined';
+$pattern {get $name} {$eval{
+  return papagaio.vars['$name'] || 'undefined';
 }}
-`);
 
-p.process('var title = My Page');
-p.process('get title');  // Output: "My Page"
+var title = My Page
+var author = John Doe
+Title: get title
+Author: get author
+`;
+
+p.process(template);
+// Output:
+// Title: My Page
+// Author: John Doe
 ```
 
 ### Conditional Processing
 ```javascript
 const p = new Papagaio();
-p.process(`
-$global {if $block cond {(}{)} then $block yes {[}{]} else $block no {<}{>}} {
+const template = `
+$pattern {if $block cond {(}{)} then $block yes {[}{]} else $block no {<}{>}} {
   $eval{
     const condition = ($cond).trim();
     return condition === 'true' ? '$yes' : '$no';
   }
 }
-`);
 
-p.process('if (true) then [yes branch] else <no branch>');
-// Output: "yes branch"
+if (true) then [yes branch] else <no branch>
+if (false) then [yes branch] else <no branch>
+`;
+
+p.process(template);
+// Output:
+// yes branch
+// no branch
+```
+
+### Function-like Patterns
+```javascript
+const p = new Papagaio();
+const template = `
+$pattern {double $x} {$eval{return parseInt('$x') * 2}}
+$pattern {add $x $y} {$eval{return parseInt('$x') + parseInt('$y')}}
+
+double 5
+add 3 7
+add (double 4) 10
+`;
+
+p.process(template);
+// Output:
+// 10
+// 10
+// 18
 ```
 
 ---
@@ -420,10 +414,9 @@ p.process('if (true) then [yes branch] else <no branch>');
 |---------|----------|
 | Variable not captured | Check context: use `$x?` for optional, or verify literals/blocks exist |
 | Block mismatch | Verify opening and closing delimiters match the declaration |
-| Infinite recursion | Reduce `recursion_limit` or simplify pattern dependencies |
+| Infinite recursion | Pattern creates circular transformation; redesign pattern logic |
 | Pattern not matching | Verify whitespace between tokens, check if variable should be optional |
-| Global pattern not persisting | Ensure using `$global` not `$local` |
-| Pattern conflicts | Check order of global patterns; newer patterns apply after older ones |
+| Pattern not available | Check scope hierarchy; patterns only inherit from parents, not siblings |
 | Nested blocks fail | Ensure delimiters are properly balanced |
 | Multi-char delimiters broken | Check delimiters don't conflict; use escaping if needed |
 | Regex not matching | Test regex pattern separately; ensure it matches at the exact position |
@@ -433,12 +426,11 @@ p.process('if (true) then [yes branch] else <no branch>');
 ## Syntax Reference
 
 ```
-$local {$x $y} {$y, $x}            # local pattern with variables
-$global {$x $y} {$y, $x}           # global pattern with variables
-$local {$x? $y} {$y, $x}           # optional variable
-$local {$regex n {[0-9]+}} {$n}    # regex capture
-$local {$block n {o}{c}} {$n}      # block capture with custom delimiters
-$eval{code}                        # JavaScript evaluation
+$pattern {$x $y} {$y, $x}            # pattern with variables
+$pattern {$x? $y} {$y, $x}           # optional variable
+$pattern {$regex n {[0-9]+}} {$n}    # regex capture
+$pattern {$block n {o}{c}} {$n}      # block capture with custom delimiters
+$eval{code}                          # JavaScript evaluation
 ```
 
 ---
@@ -447,38 +439,54 @@ $eval{code}                        # JavaScript evaluation
 
 ### Constructor
 ```javascript
-new Papagaio(sigil, open, close, local, global, evalKw, blockKw, regexKw)
+new Papagaio(sigil, open, close, pattern, evalKw, blockKw, regexKw)
 ```
 
 **Parameters:**
 - `sigil` (default: `'$'`) - Variable prefix
 - `open` (default: `'{'`) - Opening delimiter
 - `close` (default: `'}'`) - Closing delimiter
-- `local` (default: `'local'`) - Local pattern keyword
-- `global` (default: `'global'`) - Global pattern keyword
+- `pattern` (default: `'pattern'`) - Pattern keyword
 - `evalKw` (default: `'eval'`) - Eval keyword
 - `blockKw` (default: `'block'`) - Block keyword
 - `regexKw` (default: `'regex'`) - Regex keyword
 
 ### Properties
 - `papagaio.content` - Last processed output
-- `papagaio.match` - Last matched substring
-- `papagaio.globalPatterns` - Array of global patterns
-- `papagaio.recursion_limit` - Maximum recursion depth (default: 512)
+- `papagaio.match` - Last matched substring (available in replacements)
 - `papagaio.symbols` - Configuration object
+- `papagaio.exit` - Optional hook function called after processing
 
 ### Methods
 - `papagaio.process(input)` - Process input text and return transformed output
+
+### Exit Hook
+```javascript
+const p = new Papagaio();
+p.exit = function() {
+  console.log('Processing complete:', this.content);
+};
+p.process('$pattern {x} {y}\nx');
+```
 
 ---
 
 ## Performance Notes
 
-* Patterns apply recursively until no changes occur (up to `recursion_limit`)
-* Multi-character delimiter matching is optimized with regex escaping
-* Global patterns are stored and reused across calls
+* Multi-character delimiter matching is optimized with substring operations
+* Nested patterns inherit parent patterns through recursive application
 * Nested blocks and patterns have no theoretical depth limit
 * Large recursion limits can impact performance on complex inputs
-* Each `process()` call evaluates local patterns first, then global patterns
+* Each `process()` call is independent with no persistent state between calls
+
+---
+
+## Key Differences from Other Preprocessors
+
+1. **Hierarchical Scoping**: Patterns automatically inherit from parent contexts
+2. **No Global State**: Each `process()` call is independent (unless you use custom properties)
+3. **Smart Variable Capture**: Variables adapt their behavior based on what comes next
+4. **Multi-Character Everything**: All delimiters support multiple characters
+5. **Eval Integration**: Direct JavaScript execution with full access to the processor instance
 
 ***PAPAGAIO IS CURRENTLY IN HEAVY DEVELOPMENT AND EXPERIMENTATION PHASE***

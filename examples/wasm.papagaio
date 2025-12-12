@@ -1,7 +1,8 @@
 // generic ts-like to wasm compiler
 
-$local {// $comment $regex newline{[^\n]*}} {}
-$local {$regex spaces{\s\s}}{ }
+// util patterns
+$pattern {// $comment $regex newline{[^\n]*}} {}
+$pattern {$regex spaces{\s\s}}{ }
 
 $eval{
     papagaio.exit = function()
@@ -12,8 +13,8 @@ $eval{
     return ""
 }
 
-$local {export function $name $block params{(}{)}:$rets $block content{}{}} {
-    $local {parametrize}
+$pattern {export function $name $block params{(}{)}:$rets $block content{}{}} {
+    $pattern {parametrize}
     {
         $eval {
             let str = "$params".replace("(", "").replace(")", "");
@@ -35,8 +36,8 @@ $local {export function $name $block params{(}{)}:$rets $block content{}{}} {
     )
 }
 
-$local {function $name $block params{(}{)}:$rets $block content{}{}} {
-    $local {parametrize}
+$pattern {function $name $block params{(}{)}:$rets $block content{}{}} {
+    $pattern {parametrize}
     {
         $eval {
             let str = "$params".replace("(", "").replace(")", "");

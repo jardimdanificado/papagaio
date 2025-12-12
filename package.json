@@ -16,7 +16,11 @@
     "macro",
     "pattern",
     "eval",
-    "parser"
+    "parser",
+    "codegen",
+    "regex",
+    "syntax",
+    "easy"
   ],
   "author": "jardimdanificado",
   "bugs": {

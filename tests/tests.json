@@ -3,211 +3,211 @@
     {
       "id": 1,
       "name": "Basic variable substitution",
-      "code": "$local {$x $y} {$y, $x}\nhello world",
+      "code": "$pattern {$x $y} {$y, $x}\nhello world",
       "expected": "world, hello"
     },
     {
       "id": 2,
       "name": "Flexible whitespace with $",
-      "code": "$local {$x and $y} {$x & $y}\nhello   and   world",
+      "code": "$pattern {$x and $y} {$x & $y}\nhello   and   world",
       "expected": "hello & world"
     },
     {
       "id": 3,
       "name": "Block with custom delimiters",
-      "code": "$local {$block content {(}{)}} {[$content]}\ndata (hello world)",
+      "code": "$pattern {$block content {(}{)}} {[$content]}\ndata (hello world)",
       "expected": "data [hello world]"
     },
     {
       "id": 4,
       "name": "Block with multi-char delimiters",
-      "code": "$local {$block code {<<}{>>}} {CODE[$code]}\n<<console.log()>>",
+      "code": "$pattern {$block code {<<}{>>}} {CODE[$code]}\n<<console.log()>>",
       "expected": "CODE[console.log()]"
     },
     {
       "id": 5,
       "name": "Block with nested delimiters",
-      "code": "$local {$block txt {<}{>}} {[$txt]}\nouter <middle <inner> content>",
+      "code": "$pattern {$block txt {<}{>}} {[$txt]}\nouter <middle <inner> content>",
       "expected": "outer [middle <inner> content]"
     },
     {
       "id": 6,
       "name": "Eval expression with arithmetic",
-      "code": "$local {sum $a $b} {$eval{return parseInt($a) + parseInt($b)}}\nsum 5 3",
+      "code": "$pattern {sum $a $b} {$eval{return parseInt($a) + parseInt($b)}}\nsum 5 3",
       "expected": "8"
     },
     {
       "id": 7,
       "name": "Eval with arithmetic and variable",
-      "code": "$local {multiply $n} {Result: $eval{return $n * 3}}\nmultiply 5",
+      "code": "$pattern {multiply $n} {Result: $eval{return $n * 3}}\nmultiply 5",
       "expected": "Result: 15"
     },
     {
       "id": 8,
       "name": "Multiple patterns cascade",
-      "code": "$local {a} {b}\n$local {b} {c}\na",
+      "code": "$pattern {a} {b}\n$pattern {b} {c}\na",
       "expected": "c"
     },
     {
       "id": 9,
       "name": "Global pattern matching",
-      "code": "$local {x} {X}\nx y x z x",
+      "code": "$pattern {x} {X}\nx y x z x",
       "expected": "X y X z X"
     },
     {
       "id": 10,
       "name": "Pattern with special regex characters",
-      "code": "$local {a.*b} {MATCHED}\na.*b",
+      "code": "$pattern {a.*b} {MATCHED}\na.*b",
       "expected": "MATCHED"
     },
     {
       "id": 11,
       "name": "Multiple blocks in one pattern",
-      "code": "$local {$block a {(}{)} and $block b {[}{]}} {$a|$b}\n(first) and [second]",
+      "code": "$pattern {$block a {(}{)} and $block b {[}{]}} {$a|$b}\n(first) and [second]",
       "expected": "first|second"
     },
     {
       "id": 12,
       "name": "Variable reuse in replacement",
-      "code": "$local {$x} {$x:$x}\ndata",
+      "code": "$pattern {$x} {$x:$x}\ndata",
       "expected": "data:data"
     },
     {
       "id": 13,
       "name": "Literal dollar sign in replacement",
-      "code": "$local {price} {$50}\nprice",
+      "code": "$pattern {price} {$50}\nprice",
       "expected": "$50"
     },
     {
       "id": 14,
       "name": "Optional whitespace with $ optional",
-      "code": "$local {hello$world} {HI}\nhello\n\nworld",
+      "code": "$pattern {hello$world} {HI}\nhello\n\nworld",
       "expected": "HI"
     },
     {
       "id": 15,
       "name": "Block with angle brackets",
-      "code": "$local {$block inner {<}{>}} {WRAPPED[$inner]}\n<content>",
+      "code": "$pattern {$block inner {<}{>}} {WRAPPED[$inner]}\n<content>",
       "expected": "WRAPPED[content]"
     },
     {
       "id": 16,
       "name": "Pattern with literal characters",
-      "code": "$local {Mr. $name} {Hello $name}\nMr. Smith",
+      "code": "$pattern {Mr. $name} {Hello $name}\nMr. Smith",
       "expected": "Hello Smith"
     },
     {
       "id": 17,
       "name": "Eval with division and decimals",
-      "code": "$local {div $a $b} {$eval{return $a / $b}}\ndiv 7 2",
+      "code": "$pattern {div $a $b} {$eval{return $a / $b}}\ndiv 7 2",
       "expected": "3.5"
     },
     {
       "id": 18,
       "name": "Block capturing with square brackets",
-      "code": "$local {$block arr {[}{]}} {ARRAY[$arr]}\n[1, 2, 3]",
+      "code": "$pattern {$block arr {[}{]}} {ARRAY[$arr]}\n[1, 2, 3]",
       "expected": "ARRAY[1, 2, 3]"
     },
     {
       "id": 19,
       "name": "Pattern without whitespace matching",
-      "code": "$local {$a,$b} {$b,$a} one,two",
+      "code": "$pattern {$a,$b} {$b,$a} one,two",
       "expected": "two,one"
     },
     {
       "id": 20,
       "name": "Nested pattern in replacement",
-      "code": "$local {$x} {->$x<-}\ntext",
+      "code": "$pattern {$x} {->$x<-}\ntext",
       "expected": "->text<-"
     },
     {
       "id": 21,
       "name": "First pattern applies, second doesn't match",
-      "code": "$local {hello} {goodbye}\n$local {goodbye} {hi}\nhello",
+      "code": "$pattern {hello} {goodbye}\n$pattern {goodbye} {hi}\nhello",
       "expected": "hi"
     },
     {
       "id": 22,
       "name": "Block delimiter balancing - parentheses",
-      "code": "$local {$block code {(}{)}} {RESULT[$code]}\n(a (b (c) d) e)",
+      "code": "$pattern {$block code {(}{)}} {RESULT[$code]}\n(a (b (c) d) e)",
       "expected": "RESULT[a (b (c) d) e]"
     },
     {
       "id": 23,
       "name": "Block delimiter balancing - angle brackets",
-      "code": "$local {$block inner {<}{>}} {X[$inner]}\n<outer <middle <deep>> more>",
+      "code": "$pattern {$block inner {<}{>}} {X[$inner]}\n<outer <middle <deep>> more>",
       "expected": "X[outer <middle <deep>> more]"
     },
     {
       "id": 24,
       "name": "Block delimiter balancing - square brackets",
-      "code": "$local {$block data {[}{]}} {DATA[$data]}\n[outer [inner [deep]] more]",
+      "code": "$pattern {$block data {[}{]}} {DATA[$data]}\n[outer [inner [deep]] more]",
       "expected": "DATA[outer [inner [deep]] more]"
     },
     {
       "id": 25,
       "name": "Block delimiter balancing - curly braces",
-      "code": "$local {$block obj {}{}} {OBJ[$obj]}\n{key: {nested: {value}}}",
+      "code": "$pattern {$block obj {}{}} {OBJ[$obj]}\n{key: {nested: {value}}}",
       "expected": "OBJ[key: {nested: {value}}]"
     },
     {
       "id": 26,
       "name": "Multiple nested delimiters in same pattern",
-      "code": "$local {$block a {(}{)} $block b {[}{]}} {[$a|$b]}\n(test1) [test2]",
+      "code": "$pattern {$block a {(}{)} $block b {[}{]}} {[$a|$b]}\n(test1) [test2]",
       "expected": "[test1|test2]"
     },
     {
       "id": 27,
       "name": "Simple pattern cascade",
-      "code": "$local {START $x END} {RESULT[$x]}\nSTART data END",
+      "code": "$pattern {START $x END} {RESULT[$x]}\nSTART data END",
       "expected": "RESULT[data]"
     },
     {
       "id": 28,
       "name": "Block with quotes as delimiters",
-      "code": "$local {$block str {\"}{\"}} {STRING[$str]}\n\"hello world\"",
+      "code": "$pattern {$block str {\"}{\"}} {STRING[$str]}\n\"hello world\"",
       "expected": "STRING[hello world]"
     },
     {
       "id": 29,
       "name": "Block with pipe delimiters",
-      "code": "$local {$block val {|}{|}} {PIPE[$val]}\n|content here|",
+      "code": "$pattern {$block val {|}{|}} {PIPE[$val]}\n|content here|",
       "expected": "PIPE[content here]"
     },
     {
       "id": 30,
       "name": "Deeply nested block delimiters",
-      "code": "$local {$block deep {<}{>}} {[$deep]}\n<a <b <c <d> c> b> a>",
+      "code": "$pattern {$block deep {<}{>}} {[$deep]}\n<a <b <c <d> c> b> a>",
       "expected": "[a <b <c <d> c> b> a]"
     },
     {
       "id": 31,
       "name": "Two sequential patterns",
-      "code": "$local {$block content {(}{)}} {BLOCK [$content]}\n$local {BLOCK $x} {RESULT: $x}\n(inner data)",
+      "code": "$pattern {$block content {(}{)}} {BLOCK [$content]}\n$pattern {BLOCK $x} {RESULT: $x}\n(inner data)",
       "expected": "RESULT: [inner data]"
     },
     {
       "id": 32,
       "name": "Multiple eval operations in sequence",
-      "code": "$local {calc $x} {$eval{return parseInt($x) * 2}}\ncalc 3",
+      "code": "$pattern {calc $x} {$eval{return parseInt($x) * 2}}\ncalc 3",
       "expected": "6"
     },
     {
       "id": 33,
       "name": "Block delimiter edge case - empty content",
-      "code": "$local {$block empty {(}{)}} {EMPTY[$empty]}\n()",
+      "code": "$pattern {$block empty {(}{)}} {EMPTY[$empty]}\n()",
       "expected": "EMPTY[]"
     },
     {
       "id": 34,
       "name": "Multi-char delimiters with nesting",
-      "code": "$local {$block code {<<}{>>}} {CODE[$code]}\n<<outer <<inner>> more>>",
+      "code": "$pattern {$block code {<<}{>>}} {CODE[$code]}\n<<outer <<inner>> more>>",
       "expected": "CODE[outer <<inner>> more]"
     },
     {
       "id": 35,
       "name": "Cascading pattern transformations",
-      "code": "$local {START $x END} {STEP1[$x]}\n$local {STEP1 $y} {STEP2[$y]}\n$local {STEP2 $z} {FINAL[$z]}\nSTART test END",
+      "code": "$pattern {START $x END} {STEP1[$x]}\n$pattern {STEP1 $y} {STEP2[$y]}\n$pattern {STEP2 $z} {FINAL[$z]}\nSTART test END",
       "expected": "FINAL[[[test]]]"
     }
   ]

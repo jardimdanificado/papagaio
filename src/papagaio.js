@@ -1,5 +1,4 @@
 // papagaio - https://github.com/jardimdanificado/papagaio
-// do whatever you want as long you give me the credits...
 function parsePattern(p, pat) {
     const t = [], S = p.symbols.sigil, O = p.symbols.open;
     let i = 0;
@@ -130,24 +129,22 @@ function extractBlock(p, src, i, od = p.symbols.open, cd = p.symbols.close) {
 }
 
 function extractNested(p, txt) {
-    const loc = [], glb = [], S = p.symbols.sigil, O = p.symbols.open;
+    const loc = [], S = p.symbols.sigil, O = p.symbols.open;
     let out = txt;
-    for (const [arr, kw] of [[loc, p.symbols.local], [glb, p.symbols.global]]) {
-        const rx = new RegExp(`${esc(S)}${esc(kw)}\\s*${esc(O)}`, "g");
-        while (1) {
-            rx.lastIndex = 0; const m = rx.exec(out); if (!m) break;
-            const s = m.index, o = m.index + m[0].length - O.length;
-            const [mp, em] = extractBlock(p, out, o); let k = em;
-            while (k < out.length && /\s/.test(out[k])) k++;
-            if (k < out.length && out.substring(k, k + O.length) === O) {
-                const [rp, er] = extractBlock(p, out, k);
-                arr.push({ m: mp.trim(), r: rp.trim() });
-                out = out.slice(0, s) + out.slice(er); continue;
-            }
-            out = out.slice(0, s) + out.slice(em);
+    const rx = new RegExp(`${esc(S)}${esc(p.symbols.pattern)}\\s*${esc(O)}`, "g");
+    while (1) {
+        rx.lastIndex = 0; const m = rx.exec(out); if (!m) break;
+        const s = m.index, o = m.index + m[0].length - O.length;
+        const [mp, em] = extractBlock(p, out, o); let k = em;
+        while (k < out.length && /\s/.test(out[k])) k++;
+        if (k < out.length && out.substring(k, k + O.length) === O) {
+            const [rp, er] = extractBlock(p, out, k);
+            loc.push({ m: mp.trim(), r: rp.trim() });
+            out = out.slice(0, s) + out.slice(er); continue;
         }
+        out = out.slice(0, s) + out.slice(em);
     }
-    return [loc, glb, out];
+    return [loc, out];
 }
 
 function extractEvals(p, txt) {
@@ -185,9 +182,8 @@ function applyEvals(p, txt, ev) {
     return r;
 }
 
-function applyPats(p, src, pats, glbPats = []) {
-    let last = "";
-    for (const pat of [...pats, ...glbPats]) {
+function applyPats(p, src, pats) {
+    for (const pat of pats) {
         const tok = parsePattern(p, pat.m); 
         let n = '', pos = 0, ok = false;
         while (pos < src.length) {
@@ -195,17 +191,16 @@ function applyPats(p, src, pats, glbPats = []) {
             if (m) {
                 ok = true; 
                 let r = pat.r;
-                const [loc, glb, cln] = extractNested(p, r);
+                const [loc, cln] = extractNested(p, r);
                 r = cln;
-                for (const g of glb) p.globalPatterns.push(g);
                 for (const [k, v] of Object.entries(m.captures)) {
                     r = r.replace(new RegExp(esc(k) + '(?![A-Za-z0-9_])', 'g'), v);
                 }
-                if (loc.length || glb.length) r = applyPats(p, r, loc, p.globalPatterns);
+                if (loc.length) r = applyPats(p, r, loc);
                 p.match = src.slice(pos, m.endPos);
                 const [ev, ct] = extractEvals(p, r);
                 if (ev.length) r = applyEvals(p, ct, ev);
-                n += r; last = r; pos = m.endPos;
+                n += r; pos = m.endPos;
             } else { n += src[pos]; pos++; }
         }
         if (ok) src = n;
@@ -224,26 +219,23 @@ function unescapeDelim(s) {
 }
 
 export class Papagaio {
-    constructor(sigil = '$', open = '{', close = '}', local = 'local', global = 'global', evalKw = 'eval', blockKw = 'block', regexKw = 'regex') {
-        this.recursion_limit = 512;
-        this.symbols = { local, global, open, close, sigil, eval: evalKw, block: blockKw, regex: regexKw };
+    constructor(sigil = '$', open = '{', close = '}', pattern = 'pattern', evalKw = 'eval', blockKw = 'block', regexKw = 'regex') {
+        this.symbols = { pattern, open, close, sigil, eval: evalKw, block: blockKw, regex: regexKw };
         this.content = "";
         this.match = "";
-        this.globalPatterns = [];
     }
     process(input) {
-        const [loc, glb, cln] = extractNested(this, input);
-        this.globalPatterns.push(...glb);
+        const [loc, cln] = extractNested(this, input);
         const [evals, ph] = extractEvals(this, cln);
         let proc = applyEvals(this, ph, evals);
-        if (loc.length === 0 && this.globalPatterns.length === 0) {
+        if (loc.length === 0) {
             this.content = proc;
             return proc;
         }
         let src = proc, last = null, it = 0;
-        while (src !== last && it < this.recursion_limit) {
+        while (src !== last) {
             it++; last = src;
-            src = applyPats(this, src, loc, this.globalPatterns);
+            src = applyPats(this, src, loc);
             const [nested] = extractNested(this, src);
             if (nested.length === 0) break;
         }

@@ -1,4 +1,5 @@
 // papagaio-bootstrap.js
+// only needed if using <script type="papagaio"> in browser
 import { Papagaio } from "./papagaio.js";
 
 (async () => {
@@ -15,11 +16,8 @@ import { Papagaio } from "./papagaio.js";
 
     const out = p.process(src);
 
-    const s = document.createElement("script");
-    s.type = "module";
+    const s = document.createElement("div");
     s.textContent = out;
-
-    // executa no mesmo ponto onde script estava
-    el.replaceWith(s);
+    window.document.body.appendChild(s);
   }
 })();
