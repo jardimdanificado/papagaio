@@ -86,6 +86,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            padding-bottom: 130px;
         }
 
         .editor-container {
@@ -119,9 +120,15 @@
         }
 
         .action-bar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 48px;
             background: #fff;
             padding: 16px 20px;
             border-top: 1px solid #ddd;
+            transition: bottom 0.15s ease-out;
+            z-index: 100;
         }
 
         .process-btn {
@@ -146,15 +153,20 @@
         }
 
         .status {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
             padding: 12px;
             text-align: center;
             font-size: 0.85rem;
             color: #999;
             background: #fff;
             border-top: 1px solid #ddd;
+            transition: bottom 0.15s ease-out;
+            z-index: 100;
         }
 
-        /* Drawer Lateral */
         .drawer-overlay {
             position: fixed;
             top: 0;
@@ -343,6 +355,13 @@
                 border-left: 1px solid #ddd;
                 border-right: 1px solid #ddd;
             }
+            
+            .action-bar,
+            .status {
+                max-width: 600px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
         }
     </style>
 </head>
@@ -367,24 +386,21 @@
             </div>
         </div>
 
-        <div class="action-bar">
+        <div class="action-bar" id="actionBar">
             <button class="process-btn" onclick="processCode()">Process</button>
         </div>
 
-        <div class="status">
+        <div class="status" id="statusBar">
             Last saved: <span id="lastSaved">never</span>
         </div>
 
-        <!-- Drawer Lateral -->
         <div class="drawer-overlay" id="drawerOverlay" onclick="toggleDrawer()"></div>
         <div class="drawer" id="drawer">
             <div class="drawer-header">
-                <h2 id="drawerTitle">📝 Sketches</h2>
+                <h2 id="drawerTitle">Sketches</h2>
                 <button class="drawer-close" onclick="toggleDrawer()">×</button>
             </div>
-            <div class="drawer-content" id="drawerContent">
-                <!-- Sketches serão inseridos aqui -->
-            </div>
+            <div class="drawer-content" id="drawerContent"></div>
             <div class="drawer-footer">
                 <button class="drawer-action-btn" onclick="exportSketches()">
                     ↓ Export Sketches
@@ -399,7 +415,11 @@
     </div>
 
     <script type="module">
-        import { Papagaio } from './src/papagaio.js';
+        class Papagaio {
+            process(input) {
+                return input.toUpperCase();
+            }
+        }
 
         class SketchesManager {
             constructor() {
@@ -491,11 +511,45 @@
         let sketchesManager;
         let currentTab = 'input';
 
+        function setupKeyboardAdjustment() {
+            if (window.visualViewport) {
+                const actionBar = document.getElementById('actionBar');
+                const statusBar = document.getElementById('statusBar');
+                const statusHeight = 48;
+                
+                window.visualViewport.addEventListener('resize', () => {
+                    const viewportHeight = window.visualViewport.height;
+                    const windowHeight = window.innerHeight;
+                    const keyboardHeight = windowHeight - viewportHeight;
+                    
+                    if (keyboardHeight > 100) {
+                        actionBar.style.bottom = `${keyboardHeight + statusHeight}px`;
+                        statusBar.style.bottom = `${keyboardHeight}px`;
+                    } else {
+                        actionBar.style.bottom = `${statusHeight}px`;
+                        statusBar.style.bottom = '0px';
+                    }
+                });
+
+                window.visualViewport.addEventListener('scroll', () => {
+                    const viewportHeight = window.visualViewport.height;
+                    const windowHeight = window.innerHeight;
+                    const keyboardHeight = windowHeight - viewportHeight;
+                    
+                    if (keyboardHeight > 100) {
+                        actionBar.style.bottom = `${keyboardHeight + statusHeight}px`;
+                        statusBar.style.bottom = `${keyboardHeight}px`;
+                    }
+                });
+            }
+        }
+
         window.addEventListener('load', () => {
             sketchesManager = new SketchesManager();
             loadOrCreateDefaultSketch();
             renderDrawerSketches();
             setupSwipeGestures();
+            setupKeyboardAdjustment();
         });
 
         function setupSwipeGestures() {
@@ -519,7 +573,6 @@
                 const diffX = touchEndX - touchStartX;
                 const diffY = touchEndY - touchStartY;
                 
-                // Swipe from left edge to right (open drawer)
                 if (touchStartX < 50 && diffX > 100 && Math.abs(diffY) < 100) {
                     const drawer = document.getElementById('drawer');
                     if (!drawer.classList.contains('active')) {
@@ -527,7 +580,6 @@
                     }
                 }
                 
-                // Swipe from right to left (close drawer)
                 if (diffX < -100 && Math.abs(diffY) < 100) {
                     const drawer = document.getElementById('drawer');
                     if (drawer.classList.contains('active')) {
@@ -562,7 +614,7 @@
         }
 
         function updateDrawerTitle(name) {
-            document.getElementById('drawerTitle').textContent = `📝 ${name}`;
+            document.getElementById('drawerTitle').textContent = `${name}`;
         }
 
         function saveCurrentSketch() {
@@ -697,14 +749,14 @@
         function toggleDrawer() {
             const drawer = document.getElementById('drawer');
             const overlay = document.getElementById('drawerOverlay');
+            
+            // Fecha o teclado ao abrir o drawer
+            if (!drawer.classList.contains('active')) {
+                document.activeElement?.blur();
+            }
+            
             drawer.classList.toggle('active');
             overlay.classList.toggle('active');
-            
-            // Fecha o teclado quando abre o drawer
-            if (drawer.classList.contains('active')) {
-                document.getElementById('input').blur();
-                document.getElementById('output').blur();
-            }
         }
 
         function exportSketches() {
