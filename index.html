@@ -13,22 +13,18 @@
         }
 
         body {
-            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: #000;
+            overflow-x: hidden;
         }
-
-        .content {
-            flex: 1;
-            min-height: 0; /* MUITO IMPORTANTE no Firefox */
-        }
-
 
         .app {
-            height: var(--app-height);
+            max-width: 100%;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
-
 
         .header {
             background: #fff;
@@ -83,6 +79,13 @@
             background: #fff;
             color: #000;
             border-bottom: 2px solid #000;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .editor-container {
@@ -755,22 +758,5 @@
         window.switchTab = switchTab;
         window.toggleDrawer = toggleDrawer;
     </script>
-    <script>
-    (function () {
-    function resize() {
-        document.documentElement.style.setProperty(
-        '--app-height',
-        window.visualViewport
-            ? window.visualViewport.height + 'px'
-            : window.innerHeight + 'px'
-        );
-    }
-
-    resize();
-    window.addEventListener('resize', resize);
-    window.visualViewport?.addEventListener('resize', resize);
-    })();
-    </script>
-
 </body>
 </html>
