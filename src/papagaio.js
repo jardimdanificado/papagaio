@@ -175,7 +175,11 @@ function applyEvals(p, txt, ev) {
     let r = txt;
     for (let i = ev.length - 1; i >= 0; i--) {
         const ph = `__E${i}__`;
-        try { r = r.replace(ph, String(Function("papagaio", "ctx", `"use strict";return(function(){${ev[i].code}})();`)(p, {}))); }
+        try { 
+            r = r.replace(ph, String(
+                Function("ctx", `"use strict";${ev[i].code}`).call(p, {})
+            )); 
+        }
         catch (e) { r = r.replace(ph, "error: " + e.message); }
     }
     return r;
