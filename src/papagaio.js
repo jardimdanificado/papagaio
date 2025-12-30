@@ -1,112 +1,5 @@
 // papagaio - https://github.com/jardimdanificado/papagaio
-function parsePattern(p, pat) {
-    const t = [], S = p.symbols.sigil, O = p.symbols.open, C = p.symbols.close;
-    let i = 0;
-    while (i < pat.length) {
-        if (pat.startsWith(S + p.symbols.regex, i)) {
-            let j = i + S.length + p.symbols.regex.length;
-            while (j < pat.length && /\s/.test(pat[j])) j++;
-            let v = '';
-            while (j < pat.length && /[A-Za-z0-9_]/.test(pat[j])) v += pat[j++];
-            if (v) {
-                while (j < pat.length && /\s/.test(pat[j])) j++;
-                if (pat[j] === O) {
-                    const [rx, e] = extractBlock(p, pat, j);
-                    t.push({ type: 'regex', varName: v, regex: rx.trim() });
-                    i = e; continue;
-                }
-            }
-        }
-        if (pat[i] === S) {
-            let j = i + S.length;
-            const isDouble = pat[j] === S;
-            if (isDouble) j++;
-            if (pat[j] === O) {
-                const [od, e1] = extractBlock(p, pat, j);
-                if (pat[e1] === O) {
-                    const [cd, e2] = extractBlock(p, pat, e1);
-                    let v = '', k = e2;
-                    while (k < pat.length && /[A-Za-z0-9_]/.test(pat[k])) v += pat[k++];
-                    if (v) {
-                        t.push({ type: isDouble ? 'blockseq' : 'block', varName: v, open: unescapeDelim(od.trim()) || O, close: unescapeDelim(cd.trim()) || C });
-                        i = k; continue;
-                    }
-                }
-            }
-            j = i + S.length;
-            let v = '';
-            while (j < pat.length && /[A-Za-z0-9_]/.test(pat[j])) v += pat[j++];
-            if (v) {
-                const optional = pat[j] === '?';
-                if (optional) j++;
-                t.push({ type: 'var', varName: v, optional });
-                i = j; continue;
-            }
-            t.push({ type: 'lit', value: S }); i += S.length; continue;
-        }
-        if (/\s/.test(pat[i])) {
-            while (i < pat.length && /\s/.test(pat[i])) i++;
-            t.push({ type: 'ws' }); continue;
-        }
-        let lit = '';
-        while (i < pat.length && pat[i] !== S && !/\s/.test(pat[i])) lit += pat[i++];
-        if (lit) t.push({ type: 'lit', value: lit });
-    }
-    return t;
-}
-
-function matchPattern(p, src, tok, pos = 0) {
-    let cap = {};
-    for (let ti = 0; ti < tok.length; ti++) {
-        const t = tok[ti];
-        if (t.type === 'ws') { while (pos < src.length && /\s/.test(src[pos])) pos++; continue; }
-        if (t.type === 'lit') { if (!src.startsWith(t.value, pos)) return null; pos += t.value.length; continue; }
-        if (t.type === 'regex') {
-            try {
-                const rx = new RegExp(t.regex), m = src.slice(pos).match(rx);
-                if (!m || m.index !== 0) return null;
-                cap[p.symbols.sigil + t.varName] = m[0];
-                pos += m[0].length;
-            } catch (e) { return null; }
-            continue;
-        }
-        if (t.type === 'var') {
-            while (pos < src.length && /\s/.test(src[pos])) pos++;
-            const nx = findNext(tok, ti);
-            let v = '';
-            if (nx && (nx.type === 'block' || nx.type === 'lit')) {
-                const stop = nx.type === 'block' ? nx.open : nx.value;
-                while (pos < src.length && !src.startsWith(stop, pos) && src[pos] !== '\n') v += src[pos++];
-                v = v.trimEnd();
-            } else {
-                while (pos < src.length && !/\s/.test(src[pos])) v += src[pos++];
-            }
-            if (!v && !t.optional) return null;
-            cap[p.symbols.sigil + t.varName] = v;
-            continue;
-        }
-        if (t.type === 'blockseq') {
-            let blocks = [];
-            while (pos < src.length && src.startsWith(t.open, pos)) {
-                const [c, e] = extractBlock(p, src, pos, t.open, t.close);
-                blocks.push(c);
-                pos = e;
-                while (pos < src.length && /\s/.test(src[pos])) pos++;
-            }
-            if (!blocks.length) return null;
-            cap[p.symbols.sigil + t.varName] = blocks.join(' ');
-            continue;
-        }
-        if (t.type === 'block') {
-            if (!src.startsWith(t.open, pos)) return null;
-            const [c, e] = extractBlock(p, src, pos, t.open, t.close);
-            cap[p.symbols.sigil + t.varName] = c; pos = e; continue;
-        }
-    }
-    return { captures: cap, endPos: pos };
-}
-
-function findNext(t, i) { for (let k = i + 1; k < t.length; k++) if (t[k].type !== 'ws') return t[k]; return null; }
+import { capture } from './louro.js';
 
 function extractBlock(p, src, i, od = p.symbols.open, cd = p.symbols.close) {
     if (od.length > 1 || cd.length > 1) {
@@ -185,41 +78,101 @@ function applyEvals(p, txt, ev) {
     return r;
 }
 
+function processRegexPatterns(p, src, pattern) {
+    // Processa padrões regex que o louro não suporta nativamente
+    const S = p.symbols.sigil, O = p.symbols.open;
+    const regexMatch = pattern.match(new RegExp(`${esc(S)}${esc(p.symbols.regex)}\\s+([A-Za-z0-9_]+)\\s*${esc(O)}([^${esc(p.symbols.close)}]*)${esc(p.symbols.close)}`));
+    
+    if (!regexMatch) return null;
+    
+    const varName = regexMatch[1];
+    const regexStr = regexMatch[2].trim();
+    
+    try {
+        const rx = new RegExp(regexStr);
+        const matches = [];
+        let pos = 0;
+        
+        while (pos < src.length) {
+            const m = src.slice(pos).match(rx);
+            if (m && m.index === 0) {
+                matches.push({
+                    matched: m[0],
+                    captures: { [varName]: m[0] },
+                    start: pos,
+                    end: pos + m[0].length
+                });
+                pos += m[0].length;
+            } else {
+                pos++;
+            }
+        }
+        
+        return matches;
+    } catch (e) {
+        return null;
+    }
+}
+
 function applyPats(p, src, pats) {
     for (const pat of pats) {
-        const tok = parsePattern(p, pat.m); 
-        let n = '', pos = 0, ok = false;
-        while (pos < src.length) {
-            const m = matchPattern(p, src, tok, pos);
-            if (m) {
-                ok = true; 
+        // Verifica se é um padrão regex
+        const regexMatches = processRegexPatterns(p, src, pat.m);
+        
+        if (regexMatches) {
+            // Processa como padrão regex
+            let n = '', lastPos = 0;
+            
+            for (const match of regexMatches) {
+                n += src.slice(lastPos, match.start);
+                
                 let r = pat.r;
                 const [loc, cln] = extractNested(p, r);
                 r = cln;
-                Object.keys(m.captures).forEach(k => {
-                    r = r.replace(new RegExp(esc(k) + '(?![A-Za-z0-9_])', 'g'), m.captures[k]);
+                
+                Object.keys(match.captures).forEach(k => {
+                    r = r.replace(new RegExp(esc(p.symbols.sigil + k) + '(?![A-Za-z0-9_])', 'g'), match.captures[k]);
                 });
+                
                 if (loc.length) r = applyPats(p, r, loc);
-                p.match = src.slice(pos, m.endPos);
+                p.match = match.matched;
                 const [ev, ct] = extractEvals(p, r);
                 if (ev.length) r = applyEvals(p, ct, ev);
-                n += r; pos = m.endPos;
-            } else { n += src[pos]; pos++; }
+                
+                n += r;
+                lastPos = match.end;
+            }
+            
+            n += src.slice(lastPos);
+            if (regexMatches.length > 0) src = n;
+        } else {
+            // Usa louro para padrões normais
+            const result = capture(src, pat.m, p.symbols);
+            
+            if (result.count > 0) {
+                src = result.replace((match) => {
+                    let r = pat.r;
+                    const [loc, cln] = extractNested(p, r);
+                    r = cln;
+                    
+                    Object.keys(match.captures).forEach(k => {
+                        r = r.replace(new RegExp(esc(p.symbols.sigil + k) + '(?![A-Za-z0-9_])', 'g'), match.captures[k]);
+                    });
+                    
+                    if (loc.length) r = applyPats(p, r, loc);
+                    p.match = match.matched;
+                    const [ev, ct] = extractEvals(p, r);
+                    if (ev.length) r = applyEvals(p, ct, ev);
+                    
+                    return r;
+                });
+            }
         }
-        if (ok) src = n;
     }
     return src;
 }
 
 function esc(s) { return s.replace(/[.*+?^${}()|[\]\\""']/g, '\\$&'); }
-function unescapeDelim(s) {
-    let r = ''; 
-    for (let i = 0; i < s.length; i++) {
-        if (s[i] === '\\' && i + 1 < s.length && (s[i+1] === '"' || s[i+1] === "'" || s[i+1] === '\\')) { r += s[i+1]; i++; }
-        else r += s[i];
-    }
-    return r;
-}
 
 export class Papagaio {
     constructor(sigil = '$', open = '{', close = '}', pattern = 'pattern', evalKw = 'eval', blockKw = 'recursive', regexKw = 'regex', blockseqKw = 'sequential') {
