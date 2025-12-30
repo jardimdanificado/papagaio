@@ -1,5 +1,5 @@
 // papagaio - https://github.com/jardimdanificado/papagaio
-import { capture } from './louro.js';
+import { capture } from 'https://unpkg.com/louro@latest/louro.js';
 
 function extractBlock(p, src, i, od = p.symbols.open, cd = p.symbols.close) {
     if (od.length > 1 || cd.length > 1) {
