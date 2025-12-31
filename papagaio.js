@@ -1,5 +1,13 @@
 // papagaio - https://github.com/jardimdanificado/papagaio
-import 'https://unpkg.com/louro@latest/louro.js';
+
+if (typeof window !== "undefined") {
+    // Browser
+    await import('https://unpkg.com/louro@latest/louro.js');
+} else {
+    // Node.js
+    await import('louro');
+}
+
 
 function extractBlock(p, src, i, od = p.symbols.open, cd = p.symbols.close) {
     if (od.length > 1 || cd.length > 1) {
@@ -68,10 +76,10 @@ function applyEvals(p, txt, ev) {
     let r = txt;
     for (let i = ev.length - 1; i >= 0; i--) {
         const ph = `__E${i}__`;
-        try { 
+        try {
             r = r.replace(ph, String(
                 Function("ctx", `"use strict";${ev[i].code}`).call(p, {})
-            )); 
+            ));
         }
         catch (e) { r = r.replace(ph, "error: " + e.message); }
     }
@@ -82,17 +90,17 @@ function processRegexPatterns(p, src, pattern) {
     // Processa padrões regex que o louro não suporta nativamente
     const S = p.symbols.sigil, O = p.symbols.open;
     const regexMatch = pattern.match(new RegExp(`${esc(S)}${esc(p.symbols.regex)}\\s+([A-Za-z0-9_]+)\\s*${esc(O)}([^${esc(p.symbols.close)}]*)${esc(p.symbols.close)}`));
-    
+
     if (!regexMatch) return null;
-    
+
     const varName = regexMatch[1];
     const regexStr = regexMatch[2].trim();
-    
+
     try {
         const rx = new RegExp(regexStr);
         const matches = [];
         let pos = 0;
-        
+
         while (pos < src.length) {
             const m = src.slice(pos).match(rx);
             if (m && m.index === 0) {
@@ -107,7 +115,7 @@ function processRegexPatterns(p, src, pattern) {
                 pos++;
             }
         }
-        
+
         return matches;
     } catch (e) {
         return null;
@@ -118,52 +126,52 @@ function applyPats(p, src, pats) {
     for (const pat of pats) {
         // Verifica se é um padrão regex
         const regexMatches = processRegexPatterns(p, src, pat.m);
-        
+
         if (regexMatches) {
             // Processa como padrão regex
             let n = '', lastPos = 0;
-            
+
             for (const match of regexMatches) {
                 n += src.slice(lastPos, match.start);
-                
+
                 let r = pat.r;
                 const [loc, cln] = extractNested(p, r);
                 r = cln;
-                
+
                 Object.keys(match.captures).forEach(k => {
                     r = r.replace(new RegExp(esc(p.symbols.sigil + k) + '(?![A-Za-z0-9_])', 'g'), match.captures[k]);
                 });
-                
+
                 if (loc.length) r = applyPats(p, r, loc);
                 p.match = match.matched;
                 const [ev, ct] = extractEvals(p, r);
                 if (ev.length) r = applyEvals(p, ct, ev);
-                
+
                 n += r;
                 lastPos = match.end;
             }
-            
+
             n += src.slice(lastPos);
             if (regexMatches.length > 0) src = n;
         } else {
             // Usa louro para padrões normais
             const result = src.capture(pat.m, p.symbols);
-            
+
             if (result.count > 0) {
                 src = result.replace((match) => {
                     let r = pat.r;
                     const [loc, cln] = extractNested(p, r);
                     r = cln;
-                    
+
                     Object.keys(match.captures).forEach(k => {
                         r = r.replace(new RegExp(esc(p.symbols.sigil + k) + '(?![A-Za-z0-9_])', 'g'), match.captures[k]);
                     });
-                    
+
                     if (loc.length) r = applyPats(p, r, loc);
                     p.match = match.matched;
                     const [ev, ct] = extractEvals(p, r);
                     if (ev.length) r = applyEvals(p, ct, ev);
-                    
+
                     return r;
                 });
             }
