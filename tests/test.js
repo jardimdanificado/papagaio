@@ -1,4 +1,4 @@
-import { Papagaio } from '../src/papagaio.js';
+import { Papagaio } from '../papagaio.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

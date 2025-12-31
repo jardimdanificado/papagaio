@@ -1,5 +1,5 @@
 // papagaio - https://github.com/jardimdanificado/papagaio
-import { capture } from 'https://unpkg.com/louro@latest/louro.js';
+import 'https://unpkg.com/louro@latest/louro.js';
 
 function extractBlock(p, src, i, od = p.symbols.open, cd = p.symbols.close) {
     if (od.length > 1 || cd.length > 1) {
@@ -147,7 +147,7 @@ function applyPats(p, src, pats) {
             if (regexMatches.length > 0) src = n;
         } else {
             // Usa louro para padrões normais
-            const result = capture(src, pat.m, p.symbols);
+            const result = src.capture(pat.m, p.symbols);
             
             if (result.count > 0) {
                 src = result.replace((match) => {
@@ -174,7 +174,7 @@ function applyPats(p, src, pats) {
 
 function esc(s) { return s.replace(/[.*+?^${}()|[\]\\""']/g, '\\$&'); }
 
-export class Papagaio {
+export default class Papagaio {
     constructor(sigil = '$', open = '{', close = '}', pattern = 'pattern', evalKw = 'eval', blockKw = 'recursive', regexKw = 'regex', blockseqKw = 'sequential') {
         this.symbols = { pattern, open, close, sigil, eval: evalKw, block: blockKw, regex: regexKw, blockseq: blockseqKw };
         this.content = "";

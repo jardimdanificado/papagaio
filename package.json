@@ -1,8 +1,8 @@
 {
   "name": "papagaio",
-  "version": "0.7.3",
+  "version": "0.7.5",
   "description": "easy yet powerful preprocessor",
-  "main": "src/papagaio.js",
+  "main": "papagaio.js",
   "type": "module",
   "scripts": {
     "test": "node tests/test.js"

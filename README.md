@@ -9,7 +9,7 @@ Minimal yet powerful text preprocessor.
 
 ## Installation
 ```javascript
-import { Papagaio } from './src/papagaio.js';
+import { Papagaio } from './papagaio.js';
 const papagaio = new Papagaio();
 const result = papagaio.process(input);
 ```

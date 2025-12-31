@@ -2,263 +2,192 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>🦜 papagaio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: #000;
+            overflow: hidden;
+        }
+
+        .app {
+            max-width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: #fff;
+            padding: 24px 20px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: #000;
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .tabs {
+            display: flex;
+            background: #fff;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 18px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 500;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            border-right: 1px solid #ddd;
+        }
+
+        .tab:last-child {
+            border-right: none;
+        }
+
+        .tab.active {
+            background: #fff;
+            color: #000;
+            border-bottom: 2px solid #000;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            display: none;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .editor-container.active {
+            display: flex;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            font-family:
+                ui-monospace,
+                SFMono-Regular,
+                Menlo,
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 15px;
+            line-height: 1.55;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+            resize: none;
+            background: #fff;
+            color: #000;
+            white-space: pre;
+            overflow-x: auto;
+            overflow-y: auto;
+            word-break: normal;
+        }
+
+        textarea:focus {
+            outline: none;
+        }
+
+        #output {
+            background: #fafafa;
+        }
+
+        @media (min-width: 768px) {
+            .app {
+                max-width: 600px;
+                margin: 0 auto;
+                border-left: 1px solid #ddd;
+                border-right: 1px solid #ddd;
+            }
+        }
+    </style>
 </head>
 <body>
-    
-    <h1>🦜 papagaio </h1>
-    <p>
-        easy yet powerful text preprocessor.
-    </p>
-    <hr>
-    <div>
-        <strong>
-            <label for="sketchSelect">Current Sketch:</label>
-        </strong>
+    <div class="app">
+        <div class="header">
+            <h1>🦜 papagaio</h1>
+            <p>easy yet powerful text preprocessor</p>
+        </div>
 
-        <select id="sketchSelect" onchange="switchSketch()">
-            <option value="">-- Select Sketch --</option>
-        </select>
-        |
-        <button onclick="createNewSketch()">New Sketch</button>
-        <button onclick="renameCurrentSketch()">Rename</button>
-        <button onclick="deleteCurrentSketch()">Delete</button>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('input')">INPUT</button>
+            <button class="tab" onclick="switchTab('output')">OUTPUT</button>
+        </div>
+
+        <div class="content">
+            <div class="editor-container active" id="inputContainer">
+                <textarea id="input"></textarea>
+            </div>
+            <div class="editor-container" id="outputContainer">
+                <textarea id="output" readonly></textarea>
+            </div>
+        </div>
     </div>
-    <hr>
-    <div>
-        <strong>
-        <label for="sketchSelect">Sketches:</label>
-        </strong>
-        <button onclick="exportSketches()">Export</button>
-        <input type="file" id="importFileInput" onchange="importSketches(this.files[0])" accept=".json">
-    </div>
-    
-    <hr>
-    
-    <h3>INPUT</h3>
-    <textarea id="input" rows="15" cols="80" style="width: 70%; font-family: monospace;"></textarea>
-    
-    <br><br>
-    
-    <button onclick="processCode()">Process</button>
-    
-    <br><br>
-    
-    <h3>OUTPUT</h3>
-    <textarea id="output" rows="15" cols="80" style="width: 70%; font-family: monospace;" readonly></textarea>
 
     <script type="module">
-        import { Papagaio } from './src/papagaio.js';
+        import Papagaio from './papagaio.js';
+        
+        const processor = new Papagaio();
 
-        class SketchesManager {
-            constructor() {
-                this.sketches = this.loadSketches();
-                this.currentSketchId = this.loadCurrentSketchId();
-            }
-
-            loadSketches() {
-                try {
-                    const saved = localStorage.getItem('papagaio_sketches');
-                    return saved ? JSON.parse(saved) : {};
-                } catch {
-                    return {};
+        function loadSaved() {
+            try {
+                const saved = localStorage.getItem('papagaio_input');
+                if (saved) {
+                    document.getElementById('input').value = saved;
                 }
-            }
-
-            saveSketches() {
-                try {
-                    localStorage.setItem('papagaio_sketches', JSON.stringify(this.sketches));
-                } catch {}
-            }
-
-            loadCurrentSketchId() {
-                try {
-                    return localStorage.getItem('papagaio_current_sketch');
-                } catch {
-                    return null;
-                }
-            }
-
-            setCurrentSketchId(id) {
-                this.currentSketchId = id;
-                try {
-                    localStorage.setItem('papagaio_current_sketch', id);
-                } catch {}
-            }
-
-            createSketch(name) {
-                const id = Date.now().toString();
-                this.sketches[id] = {
-                    id,
-                    name,
-                    input: '',
-                    createdAt: new Date().toLocaleString()
-                };
-                this.saveSketches();
-                this.setCurrentSketchId(id);
-                return id;
-            }
-
-            getSketch(id) {
-                return this.sketches[id] || null;
-            }
-
-            updateSketch(id, data) {
-                if (this.sketches[id]) {
-                    Object.assign(this.sketches[id], data);
-                    this.saveSketches();
-                }
-            }
-
-            deleteSketch(id) {
-                delete this.sketches[id];
-                this.saveSketches();
-                if (this.currentSketchId === id) {
-                    const remaining = Object.keys(this.sketches);
-                    this.currentSketchId = remaining.length > 0 ? remaining[0] : null;
-                    if (this.currentSketchId) {
-                        this.setCurrentSketchId(this.currentSketchId);
-                    }
-                }
-            }
-
-            getAllSketches() {
-                return Object.values(this.sketches).sort((a, b) => 
-                    parseInt(b.id) - parseInt(a.id)
-                );
-            }
-
-            renameSketch(id, newName) {
-                if (this.sketches[id]) {
-                    this.sketches[id].name = newName;
-                    this.saveSketches();
-                }
-            }
+            } catch {}
         }
 
-        let processor = new Papagaio();
-        let sketchesManager;
-
-        window.addEventListener('load', () => {
-            sketchesManager = new SketchesManager();
-            loadOrCreateDefaultSketch();
-            populateSketchSelect();
-        });
-
-        function loadOrCreateDefaultSketch() {
-            let sketch = null;
-            if (sketchesManager.currentSketchId) {
-                sketch = sketchesManager.getSketch(sketchesManager.currentSketchId);
-            }
-            
-            if (!sketch) {
-                const allSketches = sketchesManager.getAllSketches();
-                if (allSketches.length > 0) {
-                    sketch = allSketches[0];
-                    sketchesManager.setCurrentSketchId(sketch.id);
-                } else {
-                    const id = sketchesManager.createSketch('Default');
-                    sketch = sketchesManager.getSketch(id);
-                }
-            }
-            
-            if (sketch) {
-                document.getElementById('input').value = sketch.input;
-                document.getElementById('output').value = '';
-            }
+        function saveInput() {
+            try {
+                const input = document.getElementById('input').value;
+                localStorage.setItem('papagaio_input', input);
+            } catch {}
         }
 
-        function saveCurrentSketch() {
-            if (sketchesManager.currentSketchId) {
-                sketchesManager.updateSketch(sketchesManager.currentSketchId, {
-                    input: document.getElementById('input').value
-                });
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.editor-container').forEach(c => c.classList.remove('active'));
+            
+            if (tab === 'input') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('inputContainer').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('outputContainer').classList.add('active');
+                processCode();
             }
-        }
-
-        function populateSketchSelect() {
-            const select = document.getElementById('sketchSelect');
-            select.innerHTML = '<option value="">-- Select Sketch --</option>';
-            
-            const sketches = sketchesManager.getAllSketches();
-            sketches.forEach(sketch => {
-                const option = document.createElement('option');
-                option.value = sketch.id;
-                option.textContent = sketch.name;
-                if (sketch.id === sketchesManager.currentSketchId) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
-        }
-
-        function switchSketch() {
-            const select = document.getElementById('sketchSelect');
-            const id = select.value;
-            
-            if (!id) return;
-            
-            saveCurrentSketch();
-            sketchesManager.setCurrentSketchId(id);
-            const sketch = sketchesManager.getSketch(id);
-            
-            if (sketch) {
-                document.getElementById('input').value = sketch.input;
-                document.getElementById('output').value = '';
-            }
-        }
-
-        function createNewSketch() {
-            const name = prompt('Enter sketch name:');
-            if (!name || !name.trim()) {
-                alert('Please enter a valid sketch name');
-                return;
-            }
-            
-            const id = sketchesManager.createSketch(name.trim());
-            populateSketchSelect();
-            
-            const sketch = sketchesManager.getSketch(id);
-            if (sketch) {
-                document.getElementById('input').value = sketch.input;
-                document.getElementById('output').value = '';
-            }
-        }
-
-        function renameCurrentSketch() {
-            if (!sketchesManager.currentSketchId) {
-                alert('No sketch selected');
-                return;
-            }
-            
-            const sketch = sketchesManager.getSketch(sketchesManager.currentSketchId);
-            const newName = prompt('Enter new name:', sketch.name);
-            
-            if (!newName || !newName.trim()) {
-                alert('Please enter a valid name');
-                return;
-            }
-            
-            sketchesManager.renameSketch(sketchesManager.currentSketchId, newName.trim());
-            populateSketchSelect();
-        }
-
-        function deleteCurrentSketch() {
-            if (!sketchesManager.currentSketchId) {
-                alert('No sketch selected');
-                return;
-            }
-            
-            const sketch = sketchesManager.getSketch(sketchesManager.currentSketchId);
-            
-            if (!confirm(`Are you sure you want to delete "${sketch.name}"? This action cannot be undone.`)) {
-                return;
-            }
-            
-            sketchesManager.deleteSketch(sketchesManager.currentSketchId);
-            loadOrCreateDefaultSketch();
-            populateSketchSelect();
         }
 
         function processCode() {
@@ -266,66 +195,15 @@
                 const input = document.getElementById('input').value;
                 const output = processor.process(input);
                 document.getElementById('output').value = output;
-                saveCurrentSketch();
+                saveInput();
             } catch (err) {
                 document.getElementById('output').value = `Error: ${err.message}`;
             }
         }
 
-        function exportSketches() {
-            const data = {
-                papagaio_sketches: localStorage.getItem('papagaio_sketches'),
-                papagaio_current_sketch: localStorage.getItem('papagaio_current_sketch'),
-                papagaio_config: localStorage.getItem('papagaio_config')
-            };
-
-            const blob = new Blob([JSON.stringify(data, null, 2)], {
-                type: "application/json"
-            });
-
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = `papagaio_sketches_${Date.now()}.json`;
-            a.click();
-        }
-
-        function importSketches(file) {
-            if (!file) return;
-            
-            const reader = new FileReader();
-
-            reader.onload = () => {
-                try {
-                    const data = JSON.parse(reader.result);
-                    if (data.papagaio_sketches) {
-                        localStorage.setItem('papagaio_sketches', data.papagaio_sketches);
-                    }
-                    if (data.papagaio_current_sketch) {
-                        localStorage.setItem('papagaio_current_sketch', data.papagaio_current_sketch);
-                    }
-                    if (data.papagaio_config) {
-                        localStorage.setItem('papagaio_config', data.papagaio_config);
-                    }
-                    location.reload();
-                } catch (err) {
-                    alert('Error importing file: ' + err.message);
-                }
-            };
-
-            reader.readAsText(file);
-        }
-
-        setInterval(() => {
-            saveCurrentSketch();
-        }, 1000);
-
-        window.processCode = processCode;
-        window.switchSketch = switchSketch;
-        window.createNewSketch = createNewSketch;
-        window.renameCurrentSketch = renameCurrentSketch;
-        window.deleteCurrentSketch = deleteCurrentSketch;
-        window.exportSketches = exportSketches;
-        window.importSketches = importSketches;
+        window.addEventListener('load', loadSaved);
+        setInterval(saveInput, 2000);
+        window.switchTab = switchTab;
     </script>
 </body>
 </html>
