@@ -28,7 +28,9 @@ function parsePattern(p, pat) {
                     let v = '', k = e2;
                     while (k < pat.length && /[A-Za-z0-9_]/.test(pat[k])) v += pat[k++];
                     if (v) {
-                        t.push({ type: isDouble ? 'blockseq' : 'block', varName: v, open: unescapeDelim(od.trim()) || O, close: unescapeDelim(cd.trim()) || C });
+                        const optional = pat[k] === '?';
+                        if (optional) k++;
+                        t.push({ type: isDouble ? 'blockseq' : 'block', varName: v, open: unescapeDelim(od.trim()) || O, close: unescapeDelim(cd.trim()) || C, optional });
                         i = k; continue;
                     }
                 }
@@ -93,12 +95,18 @@ function matchPattern(p, src, tok, pos = 0) {
                 pos = e;
                 while (pos < src.length && /\s/.test(src[pos])) pos++;
             }
-            if (!blocks.length) return null;
+            if (!blocks.length && !t.optional) return null;
             cap[p.symbols.sigil + t.varName] = blocks.join(' ');
             continue;
         }
         if (t.type === 'block') {
-            if (!src.startsWith(t.open, pos)) return null;
+            if (!src.startsWith(t.open, pos)) {
+                if (t.optional) {
+                    cap[p.symbols.sigil + t.varName] = '';
+                    continue;
+                }
+                return null;
+            }
             const [c, e] = extractBlock(p, src, pos, t.open, t.close);
             cap[p.symbols.sigil + t.varName] = c; pos = e; continue;
         }
@@ -221,7 +229,7 @@ function unescapeDelim(s) {
     return r;
 }
 
-export class Papagaio {
+export default class Papagaio {
     constructor(sigil = '$', open = '{', close = '}', pattern = 'pattern', evalKw = 'eval', blockKw = 'recursive', regexKw = 'regex', blockseqKw = 'sequential') {
         this.symbols = { pattern, open, close, sigil, eval: evalKw, block: blockKw, regex: regexKw, blockseq: blockseqKw };
         this.content = "";
