@@ -1,6 +1,6 @@
 {
   "name": "papagaio",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "description": "easy yet powerful preprocessor",
   "main": "papagaio.js",
   "type": "module",
@@ -29,8 +29,5 @@
   "homepage": "https://github.com/jardimdanificado/papagaio#readme",
   "bin": {
     "papagaio": "bin/cli.mjs"
-  },
-  "dependencies": {
-    "louro": "^0.1.1"
   }
 }
