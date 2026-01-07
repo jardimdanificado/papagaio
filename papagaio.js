@@ -1,4 +1,6 @@
-// papagaio - https://github.com/jardimdanificado/papagaio
+// papagaio.js - https://github.com/jardimdanificado/papagaio
+// papagaio.js is the complete papagaio experience
+
 function parsePattern(p, pat) {
     const t = [], S = p.symbols.sigil, O = p.symbols.open, C = p.symbols.close;
     let i = 0;
