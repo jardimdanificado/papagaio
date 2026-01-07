@@ -74,9 +74,16 @@ typedef struct {
 } Token;
 
 typedef struct {
+    const char *sigil;
+    const char *open;
+    const char *close;
+} Symbols;
+
+typedef struct {
     Token *t;
     int count;
     int cap;
+    Symbols sym;
 } Pattern;
 
 typedef struct {
@@ -99,6 +106,12 @@ static inline int sv_eq(StrView a, StrView b)
 static inline int sv_starts_with(const char *s, StrView v)
 {
     return memcmp(s, v.ptr, v.len) == 0;
+}
+
+static inline int starts_with_str(const char *s, const char *prefix)
+{
+    size_t len = strlen(prefix);
+    return memcmp(s, prefix, len) == 0;
 }
 
 static inline void skip_ws(const char *s, int *p)
@@ -148,13 +161,17 @@ static int extract_block(
     return (int)strlen(src);
 }
 
-static void parse_pattern(const char *pat, Pattern *p)
+static void parse_pattern_ex(const char *pat, Pattern *p, const Symbols *sym)
 {
     int n = (int)strlen(pat);
     p->cap = 16;
     p->count = 0;
     p->t = (Token*)malloc(sizeof(Token) * p->cap);
+    p->sym = *sym;
 
+    int sigil_len = (int)strlen(sym->sigil);
+    int open_len = (int)strlen(sym->open);
+    int close_len = (int)strlen(sym->close);
     int i = 0;
 
     while (i < n) {
@@ -173,22 +190,22 @@ static void parse_pattern(const char *pat, Pattern *p)
             continue;
         }
 
-        if (pat[i] == '$') {
-            i++;
+        if (starts_with_str(pat + i, sym->sigil)) {
+            i += sigil_len;
 
-            if (pat[i] == '{') {
-                i++;
+            if (starts_with_str(pat + i, sym->open)) {
+                i += open_len;
                 int o = i;
-                while (i < n && pat[i] != '}') i++;
+                while (i < n && !starts_with_str(pat + i, sym->close)) i++;
                 t->open = (StrView){ pat + o, (size_t)(i - o) };
-                if (i < n) i++;
+                if (starts_with_str(pat + i, sym->close)) i += close_len;
 
-                if (i < n && pat[i] == '{') {
-                    i++;
+                if (starts_with_str(pat + i, sym->open)) {
+                    i += open_len;
                     int c = i;
-                    while (i < n && pat[i] != '}') i++;
+                    while (i < n && !starts_with_str(pat + i, sym->close)) i++;
                     t->close = (StrView){ pat + c, (size_t)(i - c) };
-                    if (i < n) i++;
+                    if (starts_with_str(pat + i, sym->close)) i += close_len;
                 }
 
                 int v = i;
@@ -220,7 +237,7 @@ static void parse_pattern(const char *pat, Pattern *p)
         }
 
         int l = i;
-        while (i < n && !isspace((unsigned char)pat[i]) && pat[i] != '$') i++;
+        while (i < n && !isspace((unsigned char)pat[i]) && !starts_with_str(pat + i, sym->sigil)) i++;
         t->type = TOK_LITERAL;
         t->value = (StrView){ pat + l, (size_t)(i - l) };
         p->count++;
@@ -327,31 +344,35 @@ fail:
     return 0;
 }
 
-static char *apply_replacement(const char *rep, const Match *m)
+static char *apply_replacement_ex(const char *rep, const Match *m, const char *sigil)
 {
     StrBuf out;
     sb_init(&out);
 
     int n = (int)strlen(rep);
+    int sigil_len = (int)strlen(sigil);
+    
     for (int i = 0; i < n;) {
-        if (rep[i] == '$') {
-            int s = ++i;
-            while (i < n && (isalnum((unsigned char)rep[i]) || rep[i] == '_')) i++;
-            StrView name = { rep + s, (size_t)(i - s) };
+        if (starts_with_str(rep + i, sigil)) {
+            int s = i + sigil_len;
+            int j = s;
+            while (j < n && (isalnum((unsigned char)rep[j]) || rep[j] == '_')) j++;
+            StrView name = { rep + s, (size_t)(j - s) };
 
             int found = 0;
-            for (int j = 0; j < m->count; j++) {
-                if (sv_eq(m->cap[j].name, name)) {
-                    sb_append_n(&out, m->cap[j].value.ptr, m->cap[j].value.len);
+            for (int k = 0; k < m->count; k++) {
+                if (sv_eq(m->cap[k].name, name)) {
+                    sb_append_n(&out, m->cap[k].value.ptr, m->cap[k].value.len);
                     found = 1;
                     break;
                 }
             }
 
             if (!found) {
-                sb_append_char(&out, '$');
+                sb_append_n(&out, sigil, sigil_len);
                 sb_append_n(&out, name.ptr, name.len);
             }
+            i = j;
         } else {
             sb_append_char(&out, rep[i++]);
         }
@@ -360,9 +381,17 @@ static char *apply_replacement(const char *rep, const Match *m)
     return out.data;
 }
 
-static inline char *papagaio_process(const char *input, const char *pattern, const char *replacement) {
+static inline char *papagaio_process_ex(
+    const char *input, 
+    const char *pattern, 
+    const char *replacement,
+    const char *sigil,
+    const char *open,
+    const char *close
+) {
+    Symbols sym = { sigil, open, close };
     Pattern p;
-    parse_pattern(pattern, &p);
+    parse_pattern_ex(pattern, &p, &sym);
 
     StrBuf out;
     sb_init(&out);
@@ -373,7 +402,7 @@ static inline char *papagaio_process(const char *input, const char *pattern, con
     while (pos < len) {
         Match m;
         if (match_pattern(input, &p, pos, &m)) {
-            char *r = apply_replacement(replacement, &m);
+            char *r = apply_replacement_ex(replacement, &m, sigil);
             sb_append_n(&out, r, strlen(r));
             free(r);
             pos = m.end;
@@ -385,6 +414,14 @@ static inline char *papagaio_process(const char *input, const char *pattern, con
 
     free(p.t);
     return out.data;
+}
+
+static inline char *papagaio_process(
+    const char *input, 
+    const char *pattern, 
+    const char *replacement
+) {
+    return papagaio_process_ex(input, pattern, replacement, "$", "{", "}");
 }
 
 #endif
