@@ -1,10 +1,11 @@
 // papagaio.h - https://github.com/jardimdanificado/papagaio
-// papagaio.h implements just the papagaio core, for a complete interface use papagaio.js
+// papagaio.h implements just the papagaio core
+
 #ifndef PAPAGAIO_H
 #define PAPAGAIO_H 1
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 

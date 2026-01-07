@@ -1,5 +1,6 @@
 // papagaio.js - https://github.com/jardimdanificado/papagaio
 // papagaio.js is the complete papagaio experience
+// also check papagaio.h, a minimal core 
 
 function parsePattern(p, pat) {
     const t = [], S = p.symbols.sigil, O = p.symbols.open, C = p.symbols.close;

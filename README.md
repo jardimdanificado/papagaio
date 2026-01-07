@@ -582,4 +582,144 @@ p.process('$pattern {x} {y}\nx');
 
 ---
 
+---
+
+## papagaio.h - C Implementation
+
+### Overview
+
+**papagaio.h** is a minimal, high-performance C implementation that provides the **core pattern matching engine** only.
+
+Unlike **papagaio.js**, which is a full-featured preprocessing language with code execution, the C version focuses exclusively on fast, memory-efficient pattern matching and replacement.
+
+### Design Philosophy
+
+| Aspect | papagaio.js | papagaio.h |
+|--------|-------------|------------|
+| **Purpose** | Full preprocessing language | *Fast* pattern matching core |
+| **Features** | Complete (eval, regex, nested patterns) | Core only (variables, blocks, literals) |
+| **Dependencies** | JavaScript runtime | None (C99+) |
+| **Use Case** | Prototyping, complex logic | Production, embedding, FFI |
+
+### Feature Comparison
+
+| Feature | papagaio.js | papagaio.h |
+|---------|-------------|------------|
+| **Variables** `$x` | yes | yes |
+| **Optional variables** `$x?` | yes | yes |
+| **Blocks** `${o}{c}var` | yes | yes |
+| **Optional blocks** `${o}{c}var?` | yes | yes |
+| **Custom delimiters** | yes Multi-char | yes Multi-char |
+| **Whitespace handling** | yes | yes |
+| **Nested patterns** `$pattern{}{}` | yes Recursive | no |
+| **Sequential blocks** `${}{}var` | yes | no |
+| **Regex matching** `$regex{}` | yes | no |
+| **Code evaluation** `$eval{}` | yes | no |
+| **Pattern scopes** | yes Hierarchical | no Single pass |
+| **Configurable symbols** | yes Constructor | yes Function param |
+| **Context access** | yes `this.match` | no |
+
+### Installation & Usage
+
+#### Basic Usage (Default Symbols)
+```c
+#include "papagaio.h"
+
+char *result = papagaio_process(
+    "hello world",
+    "$a $b",
+    "[$a] [$b]"
+);
+printf("%s\n", result);  // [hello] [world]
+free(result);
+```
+
+#### Custom Symbols
+```c
+char *result = papagaio_process_ex(
+    "hello world",
+    "@a @b",
+    "[@a] [@b]",
+    "@",    // sigil
+    "[",    // open delimiter
+    "]"     // close delimiter
+);
+printf("%s\n", result);  // [hello] [world]
+free(result);
+```
+
+#### Multi-Character Delimiters
+```c
+char *result = papagaio_process_ex(
+    "data <<content>>",
+    "%p %{<<}{>>}b",
+    "%p: %b",
+    "%", "<<", ">>"
+);
+printf("%s\n", result);  // data: content
+free(result);
+```
+
+### API Reference
+
+#### Functions
+```c
+char *papagaio_process(
+    const char *input,
+    const char *pattern,
+    const char *replacement
+);
+```
+Process input with default symbols (`$`, `{`, `}`).
+```c
+char *papagaio_process_ex(
+    const char *input,
+    const char *pattern,
+    const char *replacement,
+    const char *sigil,
+    const char *open,
+    const char *close
+);
+```
+Process input with custom symbols (supports multi-character delimiters).
+
+**Returns:** Dynamically allocated string (caller must `free()`)
+
+### Limitations
+
+The C implementation is **intentionally minimal**. These features are **not available**:
+
+- **No recursive patterns** - Single pass only, no nested `$pattern{}{}` definitions  
+- **No sequential blocks** - `${}{}var` syntax not supported 
+- **No regex** - `$regex{}` not supported
+- **No eval** - `$eval{}` not supported
+- **No pattern scopes** - Patterns don't inherit or nest 
+- **No context access** - No equivalent to `papagaio.match` or `papagaio.content`  
+
+### When to Use Which Version
+
+#### Use **papagaio.h** when:
+- You are doing runtime text processing or realtime stuff;
+- You need high performance for large inputs;
+- You are embedding in other languages;
+- You are building a compiler/parser/language/vm/whatever;
+
+#### Use **papagaio.js** when:
+- You are doing pre-processing;
+- You dont need papagaio.h;
+
+### C Implementation Details
+
+- **Header-only**: Single `papagaio.h` file, no compilation needed
+- **Zero dependencies**: Uses only C standard library
+- **Memory-efficient**: Uses string views to avoid unnecessary copies
+- **Portable**: C99 compatible, works on any platform
+
+### Considerations
+- papagaio.js is almost always the better choice unless you specifically need C performance or embedding.
+- you can use papagaio.js embedded in C code using quickjs or such, will not be really fast but will have all features.
+- papagaio.h is not incomplete.
+
+---
+
 ***PAPAGAIO IS CURRENTLY IN HEAVY DEVELOPMENT AND EXPERIMENTATION PHASE***
