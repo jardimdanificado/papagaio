@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 typedef struct {
     const char *ptr;
@@ -98,6 +99,11 @@ typedef struct {
     int cap_size;
     int end;
 } Match;
+
+typedef struct {
+    Pattern pattern;
+    const char *replacement;
+} Rule;
 
 static inline int sv_eq(StrView a, StrView b)
 {
@@ -382,47 +388,74 @@ static char *apply_replacement_ex(const char *rep, const Match *m, const char *s
     return out.data;
 }
 
-static inline char *papagaio_process_ex(
-    const char *input, 
-    const char *pattern, 
-    const char *replacement,
-    const char *sigil,
-    const char *open,
-    const char *close
-) {
+static inline char *_papagaio_process_ex(const char *input, const char *sigil, const char *open, const char *close, ...) {
     Symbols sym = { sigil, open, close };
-    Pattern p;
-    parse_pattern_ex(pattern, &p, &sym);
-
+    
+    Rule *rules = NULL;
+    int rule_count = 0;
+    int rule_cap = 8;
+    rules = (Rule*)malloc(sizeof(Rule) * rule_cap);
+    
+    va_list args;
+    va_start(args, close);
+    
+    while (1) {
+        const char *pattern = va_arg(args, const char*);
+        if (!pattern) break;
+        
+        const char *replacement = va_arg(args, const char*);
+        
+        if (rule_count >= rule_cap) {
+            rule_cap <<= 1;
+            rules = (Rule*)realloc(rules, sizeof(Rule) * rule_cap);
+        }
+        
+        parse_pattern_ex(pattern, &rules[rule_count].pattern, &sym);
+        rules[rule_count].replacement = replacement;
+        rule_count++;
+    }
+    
+    va_end(args);
+    
     StrBuf out;
     sb_init(&out);
-
+    
     int len = (int)strlen(input);
     int pos = 0;
-
+    
     while (pos < len) {
-        Match m;
-        if (match_pattern(input, &p, pos, &m)) {
-            char *r = apply_replacement_ex(replacement, &m, sigil);
-            sb_append_n(&out, r, strlen(r));
-            free(r);
-            pos = m.end;
-            free(m.cap);
-        } else {
+        int matched = 0;
+        
+        for (int i = 0; i < rule_count; i++) {
+            Match m;
+            if (match_pattern(input, &rules[i].pattern, pos, &m)) {
+                char *r = apply_replacement_ex(rules[i].replacement, &m, sigil);
+                sb_append_n(&out, r, strlen(r));
+                free(r);
+                pos = m.end;
+                free(m.cap);
+                matched = 1;
+                break;
+            }
+        }
+        
+        if (!matched) {
             sb_append_char(&out, input[pos++]);
         }
     }
-
-    free(p.t);
+    
+    for (int i = 0; i < rule_count; i++) {
+        free(rules[i].pattern.t);
+    }
+    free(rules);
+    
     return out.data;
 }
 
-static inline char *papagaio_process(
-    const char *input, 
-    const char *pattern, 
-    const char *replacement
-) {
-    return papagaio_process_ex(input, pattern, replacement, "$", "{", "}");
-}
+#define papagaio_process_ex(input, sigil, open, close, ...) \
+    _papagaio_process_ex(input, sigil, open, close, __VA_ARGS__, NULL);
+
+#define papagaio_process(input, ...) \
+    _papagaio_process_ex(input, "$", "{", "}", __VA_ARGS__, NULL);
 
 #endif
