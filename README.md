@@ -612,7 +612,7 @@ Unlike **papagaio.js**, which is a full-featured preprocessing language with cod
 | **Custom delimiters** | yes Multi-char | yes Multi-char |
 | **Whitespace handling** | yes | yes |
 | **Nested patterns** `$pattern{}{}` | yes Recursive | no |
-| **Sequential blocks** `${}{}var` | yes | no |
+| **Sequential blocks** `$${}{}var` | yes | no |
 | **Regex matching** `$regex{}` | yes | no |
 | **Code evaluation** `$eval{}` | yes | no |
 | **Pattern scopes** | yes Hierarchical | no Single pass |
@@ -690,7 +690,7 @@ Process input with custom symbols (supports multi-character delimiters).
 The C implementation is **intentionally minimal**. These features are **not available**:
 
 - **No recursive patterns** - Single pass only, no nested `$pattern{}{}` definitions  
-- **No sequential blocks** - `${}{}var` syntax not supported 
+- **No sequential blocks** - `$${}{}var` not supported 
 - **No regex** - `$regex{}` not supported
 - **No eval** - `$eval{}` not supported
 - **No pattern scopes** - Patterns don't inherit or nest 
