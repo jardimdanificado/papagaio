@@ -1,6 +1,6 @@
 // examples/lang2wat/compiler.js
 // Compilador Completo de Sintaxe C Moderna para WebAssembly Text (WAT - WASM 1.0)
-// usando Papagaio para pattern matching estrutural, sistema de macros e geração de S-Expressions.
+// usando Papagaio para pattern matching estrutural, sistema de macros, verbos de memória e geração de S-Expressions.
 
 import { papagaio } from "../../src/index.js";
 
@@ -153,7 +153,6 @@ export function compileExpression(exprStr, ctx) {
 
   // Remove parênteses externos redundantes em expressões C: (expr)
   if (expr.startsWith("(") && expr.endsWith(")")) {
-    // Se for uma S-Expression já formatada WAT: (i32.add ...), (call ...), (select ...)
     if (/^\((i32|i64|f32|f64|v128|local|global|call|block|loop|if|select|return|unreachable|memory|data|table|ref)[\s.]/.test(expr)) {
       return expr;
     }
@@ -237,19 +236,27 @@ export function compileExpression(exprStr, ctx) {
     return `(i32.const ${strPtr})`;
   }
 
-  // 9. Chamada de função ou Built-in Wasm 1.0
+  // 9. Chamada de função ou Verbos de Memória / Built-ins Wasm 1.0
   const fnMatch = "$fn$identifier($args)".papagaio.match(expr);
   if (fnMatch) {
     const fnName = fnMatch.fn;
     const rawArgs = fnMatch.args.trim() ? splitArgs(fnMatch.args).map(a => compileExpression(a.trim(), ctx)) : [];
     
-    // Built-ins de Memória Wasm 1.0
-    if (fnName === "load32" || fnName === "i32_load") return `(i32.load ${rawArgs[0]})`;
-    if (fnName === "store32" || fnName === "i32_store") return `(i32.store ${rawArgs[0]} ${rawArgs[1]})`;
-    if (fnName === "load8" || fnName === "i32_load8_u") return `(i32.load8_u ${rawArgs[0]})`;
+    // Verbos Diretos de Memória Linear
+    if (fnName === "load" || fnName === "load32" || fnName === "i32_load") return `(i32.load ${rawArgs[0]})`;
+    if (fnName === "store" || fnName === "store32" || fnName === "i32_store") return `(i32.store ${rawArgs[0]} ${rawArgs[1]})`;
+    if (fnName === "load8" || fnName === "load8_u" || fnName === "i32_load8_u") return `(i32.load8_u ${rawArgs[0]})`;
+    if (fnName === "load8_s" || fnName === "i32_load8_s") return `(i32.load8_s ${rawArgs[0]})`;
     if (fnName === "store8" || fnName === "i32_store8") return `(i32.store8 ${rawArgs[0]} ${rawArgs[1]})`;
-    if (fnName === "load16" || fnName === "i32_load16_u") return `(i32.load16_u ${rawArgs[0]})`;
+    if (fnName === "load16" || fnName === "load16_u" || fnName === "i32_load16_u") return `(i32.load16_u ${rawArgs[0]})`;
+    if (fnName === "load16_s" || fnName === "i32_load16_s") return `(i32.load16_s ${rawArgs[0]})`;
     if (fnName === "store16" || fnName === "i32_store16") return `(i32.store16 ${rawArgs[0]} ${rawArgs[1]})`;
+    if (fnName === "load64" || fnName === "load_i64" || fnName === "i64_load") return `(i64.load ${rawArgs[0]})`;
+    if (fnName === "store64" || fnName === "store_i64" || fnName === "i64_store") return `(i64.store ${rawArgs[0]} ${rawArgs[1]})`;
+    if (fnName === "load_f32" || fnName === "load_float" || fnName === "f32_load") return `(f32.load ${rawArgs[0]})`;
+    if (fnName === "store_f32" || fnName === "store_float" || fnName === "f32_store") return `(f32.store ${rawArgs[0]} ${rawArgs[1]})`;
+    if (fnName === "load_f64" || fnName === "load_double" || fnName === "f64_load") return `(f64.load ${rawArgs[0]})`;
+    if (fnName === "store_f64" || fnName === "store_double" || fnName === "f64_store") return `(f64.store ${rawArgs[0]} ${rawArgs[1]})`;
     if (fnName === "memory_size") return `(memory.size)`;
     if (fnName === "memory_grow") return `(memory.grow ${rawArgs[0]})`;
 
@@ -463,20 +470,20 @@ export function compileStatements(bodyStr, ctx) {
     }
     if (matchedComp) continue;
 
-    // Escrita em ponteiro C: *ptr = val;
-    const ptrStoreMatch = "*$ptr$identifier = $val".papagaio.match(stmt);
-    if (ptrStoreMatch) {
-      const valWat = compileExpression(ptrStoreMatch.val, ctx);
-      watStatements.push(`(i32.store (local.get $${ptrStoreMatch.ptr}) ${valWat})`);
-      continue;
-    }
-
     // Escrita em array/ponteiro C: ptr[i] = val;
     const arrayStoreMatch = "$ptr$identifier[$idx] = $val".papagaio.match(stmt);
     if (arrayStoreMatch) {
       const idxWat = compileExpression(arrayStoreMatch.idx, ctx);
       const valWat = compileExpression(arrayStoreMatch.val, ctx);
       watStatements.push(`(i32.store (i32.add (local.get $${arrayStoreMatch.ptr}) (i32.mul ${idxWat} (i32.const 4))) ${valWat})`);
+      continue;
+    }
+
+    // Escrita em ponteiro C: *ptr = val;
+    const ptrStoreMatch = "*$ptr$identifier = $val".papagaio.match(stmt);
+    if (ptrStoreMatch) {
+      const valWat = compileExpression(ptrStoreMatch.val, ctx);
+      watStatements.push(`(i32.store (local.get $${ptrStoreMatch.ptr}) ${valWat})`);
       continue;
     }
 
@@ -504,7 +511,7 @@ export function compileStatements(bodyStr, ctx) {
       continue;
     }
 
-    // Expressão isolada
+    // Expressão isolada (ex: chamadas de função void como store(addr, val))
     const exprWat = compileExpression(stmt, ctx);
     if (exprWat) {
       watStatements.push(exprWat);

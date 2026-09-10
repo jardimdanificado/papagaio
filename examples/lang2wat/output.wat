@@ -31,6 +31,20 @@
     (unreachable)
   )
 
+  (func $test_direct_memory (export "test_direct_memory") (result i32)
+    (local $valInt i32)
+    (local $valByte i32)
+    (local $valStore i32)
+    (i32.store (i32.const 100) (i32.const 4000))
+    (i32.store8 (i32.const 200) (i32.const 200))
+    (i32.store (i32.const 300) (i32.const 42))
+    (local.set $valInt (i32.load (i32.const 100)))
+    (local.set $valByte (i32.load8_u (i32.const 200)))
+    (local.set $valStore (i32.load (i32.const 300)))
+    (return (i32.add (i32.add (local.get $valInt) (local.get $valByte)) (local.get $valStore)))
+    (unreachable)
+  )
+
   (func $score_grade (export "score_grade") (param $score i32) (result i32)
     (if
       (i32.ge_s (local.get $score) (i32.const 90))

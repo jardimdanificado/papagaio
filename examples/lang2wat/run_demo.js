@@ -51,7 +51,20 @@ export int test_macro_system(int a, int b) {
     return acumulador + menor;
 }
 
-// 6. Cadeia de 'else if'
+// 6. Acesso Direto à Memória Linear (Verbos explícitos: store, load, store8, load8)
+export int test_direct_memory() {
+    store(100, 4000);
+    store8(200, 200);
+    store(300, 42);
+    
+    int valInt = load(100);
+    int valByte = load8(200);
+    int valStore = load(300);
+    
+    return valInt + valByte + valStore; // 4000 + 200 + 42 = 4242
+}
+
+// 7. Cadeia de 'else if'
 export int score_grade(int score) {
     if (score >= 90) {
         return 1; // Grade A
@@ -134,6 +147,7 @@ const importObject = {
 const wasmModule = await WebAssembly.instantiate(wasmBuffer, importObject);
 const {
   test_macro_system,
+  test_direct_memory,
   score_grade,
   greet,
   increment_global,
@@ -147,13 +161,12 @@ memoryRef = memory;
 console.log("\n[5] Resultados dos Testes de Execução:");
 
 // Teste 1: Sistema de Macros (min + swap + repeat)
-// Entrada: a=10, b=20.
-// min(10, 20) = 10.
-// swap(a, b) -> a=20, b=10.
-// repeat(4) { acumulador += 20 } -> acumulador = 80.
-// Retorno: 80 + 10 = 90.
 const macroRes = test_macro_system(10, 20);
 console.log("• test_macro_system(10, 20) =", macroRes, "(esperado: 90) ->", macroRes === 90 ? "CORRETO ✅" : "FALHOU ❌");
+
+// Teste 2: Acesso Direto à Memória Linear (int[addr], u8[addr] e store/load)
+const directMemRes = test_direct_memory();
+console.log("• test_direct_memory() [int[100]=4000 + u8[200]=200 + store(300,42)] =", directMemRes, "(esperado: 4242) ->", directMemRes === 4242 ? "CORRETO ✅" : "FALHOU ❌");
 
 // Teste 2: Else If Chain
 console.log("• score_grade(95) =", score_grade(95), "(esperado: 1) ->", score_grade(95) === 1 ? "CORRETO ✅" : "FALHOU ❌");

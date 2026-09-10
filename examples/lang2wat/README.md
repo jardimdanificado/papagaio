@@ -4,7 +4,7 @@ A lightweight, feature-complete compiler that translates structured **C syntax w
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 * **Papagaio Macro System (Compile-time meta-programming)**:
   * Expression macros: `macro min($a, $b) => ($a < $b ? $a : $b);`
@@ -15,15 +15,16 @@ A lightweight, feature-complete compiler that translates structured **C syntax w
 * **Mutable Global Variables**: `global int g_counter = 500;` mapped to `(global $g_counter (mut i32) (i32.const 500))`
 * **Chained Else-If Control Flow**: `if (a) { ... } else if (b) { ... } else { ... }` (unlimited depth)
 * **Ternary Operator with Native Hardware Select**: `a > b ? a : b` mapped directly to `(select a b cond)`
-* **Memory Byte Operations**: `store8(addr, val)`, `load8(addr)`, `store16(addr, val)`, `load16(addr)`
-* **WASM Bitwise & Numeric Built-ins**: `popcnt(x)`, `clz(x)`, `ctz(x)`, `sqrt(x)`, `abs(x)`, `min(a,b)`, `max(a,b)`
-* **Pointers & Memory Indexing**:
+* **Direct Linear Memory Verbs**:
+  * 32-bit: `store(addr, val)` and `int val = load(addr)`
+  * 8-bit / 16-bit / 64-bit / floats: `store8(addr, val)`, `load8(addr)`, `store16`, `load16`, `store64`, `load64`, `store_f32`, `load_f32`
+* **Pointers & Array Element Indexing**:
   * Pointer dereference: `*ptr = val;` and `int v = *ptr;`
-  * Array indexing: `ptr[i] = val;` and `int v = ptr[i];`
+  * Array indexing: `ptr[i] = val;` and `int v = ptr[i];` (auto multiplies index by element size)
 
 ---
 
-## 📖 Sample Code with Macros
+## Sample Code with Macros
 
 ```c
 // 1. Define Macros via Papagaio
@@ -60,7 +61,7 @@ export int test_macro_system(int a, int b) {
 
 ---
 
-## 🧪 Running the Test Suite
+## Running the Test Suite
 
 Execute the automated test suite:
 
