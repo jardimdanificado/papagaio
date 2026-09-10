@@ -28,7 +28,17 @@ Each example demonstrates how to leverage Papagaio's pattern matching, balanced 
 
 ---
 
-### 3. [Legacy Papagaio Compatibility Interpreter](./legacy/)
+### 3. [General-Purpose C/Rust-like to WebAssembly (WAT) Compiler](./lang2wat/)
+- **Concepts**: Function signatures, hoisted local variables (`(local ...)`), structured control flow (`if/else`, `while`), recursive functions, and linear memory pointers (`load32`/`store32`).
+- **Demonstrates**: Transpiling modern expressive imperative syntax directly into valid WebAssembly S-expressions using Papagaio pattern matching and executing natively.
+- **Run**:
+  ```sh
+  node examples/lang2wat/run_demo.js
+  ```
+
+---
+
+### 4. [Legacy Papagaio Compatibility Interpreter](./legacy/)
 - **Concepts**: Meta-programming, implementing an entire language runtime with scoped variables (`$from`), dynamic list operations (`$list`), loops (`$while`, `$repeat`), and math (`$math`) purely using `String.prototype.papagaio`.
 - **Demonstrates**: How modern Papagaio can serve as an engine to execute older DSLs and historical code without C compilers or native DLL plugins.
 - **Run**:
